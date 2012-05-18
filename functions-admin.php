@@ -3,15 +3,15 @@
 function wpskillz_quiz_meta_boxes() {
 	add_meta_box(
 		'wpskillz-quiz',
-		__( 'Question and answers' ),
-		'wpskillz_answers_custom_box',
+		__( 'Question and answers', 'wp_skillz' ),
+		'wpskillz_question_box',
 		'quiz',
 		'normal',
-		'core'	
+		'core'
 	);
 }
 
-function wpskillz_answers_custom_box() {
+function wpskillz_question_box() {
 	global $post;
 	if ( $post->post_type !== 'quiz' )
 		return;
@@ -21,32 +21,33 @@ function wpskillz_answers_custom_box() {
 
 	$quiz = array(
 		'question' => get_post_meta( $post->ID, 'question', true ),
+		'history' => get_post_meta( $post->ID, 'history', true ),
 		'answers' => array_pad( $old_answers, 4, array( 'answer_id' => false, 'answer_text' => '', 'is_correct' => false ) )
 	);
-?>
+
+	?>
 <table width="100%">
 	<tr>
 		<td valign="top" width="50%">
-        <div class="wmd-panel">
-            <div id="wmd-button-bar"></div>
-			<textarea name="question-body" class="wmd-input" id="wmd-input"><?php echo get_post_meta( $post->ID, 'question', true ); ?></textarea>
-		</div>
-        <div id="wmd-preview" class="wmd-panel wmd-preview"></div>
+			<div class="wmd-panel">
+				<div id="wmd-button-bar"></div>
+				<textarea name="question-body" class="wmd-input" id="wmd-input"><?php echo get_post_meta( $post->ID, 'question', true ); ?></textarea>
+			</div>
+			<div id="wmd-preview" class="wmd-panel wmd-preview"></div>
+			<input type="hidden" name="quiz-q-html" id="quiz-q-html" />
 		</td>
 		<td valign="top" width="50%">
-			<?php 
-		foreach ( $quiz['answers'] as $answer ) {
-			$id = ( $answer['answer_id'] ) ? $answer['answer_id'] : uniqid();
-			echo '<p><input name="is_correct" value="'.$id.'" type="radio" '.checked( $answer['is_correct'], true, false ) . '/>';
-			echo '<textarea id="" name="answers['.esc_attr($id).']" rows="3" cols="30">'.$answer['answer_text'].'</textarea></p>';
-		} 
-			?>
+		<?php 
+			foreach ( $quiz['answers'] as $answer ) {
+				$id = ( $answer['answer_id'] ) ? $answer['answer_id'] : uniqid();
+				echo '<p><input name="is_correct" value="'.$id.'" type="radio" '.checked( $answer['is_correct'], true, false ) . '/>';
+				echo '<textarea id="" name="answers['.$id.']" rows="3" cols="30">'.$answer['answer_text'].'</textarea></p>';
+			} 
+		?>
 		</td>
 	</tr>
 </table>
-
-
-<?
+	<?
 }
 
 add_action( 'admin_enqueue_scripts', 'wpskillz_enqueue_admin_scripts' );
@@ -71,7 +72,7 @@ function wpskillz_enqueue_admin_scripts( $page ) {
 	wp_enqueue_style( 'pagedown-style', plugins_url( '/css/admin.css', __FILE__ ) );
 
 	wp_enqueue_script( 'wpskillz_admin_js', 
-		plugins_url( '/js/admin.js', __FILE__ ), 
+		plugins_url( '/js/wpskillz-admin.post.js', __FILE__ ), 
 		array( 'jquery', 'markdown-converter', 'markdown-sanitizer', 'markdown-editor' )
 	);
 
@@ -92,7 +93,14 @@ function wpskillz_save_quiz_meta( $post_ID ) {
 	$question = $_POST['question-body'];
 
 	define( 'UPDATING_POST', 'true' );
-	wp_update_post( array( 'ID' => $post_ID, 'post_title' => $question, 'post_content' => $question ) );
+	wp_update_post( 
+		array( 
+			'ID' => $post_ID,
+			'post_title' => wp_strip_all_tags( $question ),
+			'post_name' => $post_ID,
+			'post_content' => wp_filter_post_kses( $_POST['quiz-q-html'] ) 
+		)
+	);
 
 	update_post_meta( $post_ID, 'question', $_POST['question-body'] );
 
