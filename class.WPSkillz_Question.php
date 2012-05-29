@@ -25,10 +25,14 @@ class WPSkillz_Question {
 
 		add_filter( 'the_title', array( &$this, 'title_progress' ) );
 		add_filter( 'the_content', array( &$this, 'display_question' ) );
-		add_action( 'wp_enqueue_scripts', array( &$this, 'enqueue_scripts' ) );
 		add_action( 'admin_enqueue_scripts', array( &$this, 'admin_scripts' ) );
 		add_action( 'save_post', array( &$this, 'save_post' ) );
 
+		/*
+		 * Since the questions are not set up until the_post hook is run, it's too late
+		 * to catch the 'wp_enqueue_scripts' hook. This is sort of a hackaround.
+		 */
+		if ( !is_admin() ) $this->enqueue_scripts();
 	}
 
 	/*
@@ -45,7 +49,7 @@ class WPSkillz_Question {
 	 * @uses	wpskillz_user_progress()		Get the current user's progress
 	 *
 	 */
-	protected function title_progress( $title ) {
+	function title_progress( $title ) {
 
 		if ( is_admin() || !is_main_query() || !in_the_loop() )
 			return $title;
@@ -54,9 +58,10 @@ class WPSkillz_Question {
 		if ( $post->post_type !== 'quiz' )
 			return $title;
 
-		$progress = wpskillz_user_progress();
+		global $wpskillz_session;
 
-		$title = 'Question '.$progress['current'].'/'.$progress['oftotal']. ' ('.number_format( $progress['percent']*100, 0 ).'% complete)';
+		$title = 'Question '.$wpskillz_session->current.' of '.$wpskillz_session->oftotal;
+	   	$title .= ' ('.number_format( $wpskillz_session->complete / $wpskillz_session->oftotal * 100, 0 ).'% complete)';
 		return $title;
 	}
 
@@ -65,7 +70,7 @@ class WPSkillz_Question {
 	 * Filters the content of question posts to include the answer options at the end 
 	 * and any other meta data called for.
 	 *
-	 * @uses	wpskillz_render_answer_mark()	Show correct answer and explanation, if
+	 * @uses	render_answer_mark()	Show correct answer and explanation, if
 	 * 											question was already answered
 	 */
 	public function display_question( $content ) {
@@ -76,17 +81,24 @@ class WPSkillz_Question {
 		if ( $post->post_type !== 'quiz' )
 			return $content;
 
-		$progress = wpskillz_user_progress(); 
+		global $wpskillz_session;
 
-		if ( in_array( $post->ID, array_keys( $progress['questions'] ) ) ) {
-			$date = $progress['questions'][$post->ID]['date'];
+		/*
+		 * If question has already been answered, prepend message to questions indicating that user 
+		 * has already answered the question, and call render_answer_mark to append correct answer and
+		 * explanation. Otherwise just append answer choices to question.
+		 */
+		if ( is_array( $wpskillz_session->progress ) && 
+				in_array( $post->ID, array_keys( $wpskillz_session->progress ) ) ) {
+
+			$date = $wpskillz_session->progress['questions'][$post->ID]['date'];
 			$date_format_local = mysql2date( get_option('date_format'), $date, true );
 
 			$content = '<p class="already-done">You\'ve answered this question (on '.$date_format_local.')</p>' . $content;
 
 			$content .= '<div id="wpskillz-quiz-answers">';
 
-			$content .= wpskillz_render_answer_mark( $post->ID, $progress['questions'][$post->ID]['answer_given'] );
+			$content .= $this->render_answer_mark( $post->ID, $wpskillz_session->progress['questions'][$post->ID]['answer_given'] );
 
 			$content .= '</div>';
 
@@ -127,8 +139,8 @@ EOF;
 	 * @return	void|str
 	 *
 	 */
-	public function wpskillz_render_answer_mark( $question, $answer, $echo = false ) {
-		$correct_answer = wpskillz_handle_answer( $question, $answer );
+	public function render_answer_mark( $question, $answer, $echo = false ) {
+		$correct_answer = $this->handle_answer( $question, $answer );
 
 		$response = ( $correct_answer['mark'] ) ? 
 			'<p class="correct">Correct!</p>' :
@@ -239,10 +251,9 @@ EOF;
 	 * Enqueues all scripts necessary for the question display, Ajax polling, and 
 	 * rendering of correct answer on completion.
 	 *
+	 * @return	void
 	 **/
 	function enqueue_scripts() {
-		if ( !is_singular( 'quiz' ) )
-			return;
 
 		wp_enqueue_script( 'wpskillz-frontend', plugins_url( '/js/wpskillz-frontend.quiz.js', __FILE__ ), array( 'jquery' ) );
 		wp_localize_script( 'wpskillz-frontend', 'wpSkillz',
@@ -258,6 +269,8 @@ EOF;
 	/**
 	 * Enqueues all scripts necessary for editing the question on the post.php 
 	 * screen.
+	 *
+	 * @return	void
 	 */
 	function admin_scripts( $page ) {
 		if ( !in_array( $page, array( 'post.php', 'post-new.php' ) ) )
