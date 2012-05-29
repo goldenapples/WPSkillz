@@ -4,5 +4,5 @@ jQuery(document).ready ($) ->
 	editor.run()
 	editor.refreshPreview()
 	converter.hooks.chain 'postConversion', (text) ->
-		$('#quiz-q-html').val text
+		jQuery('#quiz-q-html').val text
 		text

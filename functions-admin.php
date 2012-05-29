@@ -9,6 +9,14 @@ function wpskillz_quiz_meta_boxes() {
 		'normal',
 		'core'
 	);
+	add_meta_box(
+		'wpskillz-difficulty',
+		__('Difficulty and explanation', 'wp_skillz' ),
+		'wpskillz_difficulty_box',
+		'quiz',
+		'normal',
+		'core'
+	);
 }
 
 function wpskillz_question_box() {
@@ -29,21 +37,37 @@ function wpskillz_question_box() {
 <table width="100%">
 	<tr>
 		<td valign="top" width="50%">
+			<p class="description">Both question and answers can be formatted with StackOverflow-flavored Markdown.</p>
 			<div class="wmd-panel">
 				<div id="wmd-button-bar"></div>
 				<textarea name="question-body" class="wmd-input" id="wmd-input"><?php echo get_post_meta( $post->ID, 'question', true ); ?></textarea>
 			</div>
 			<div id="wmd-preview" class="wmd-panel wmd-preview"></div>
-			<input type="hidden" name="quiz-q-html" id="quiz-q-html" />
+			<input type="hidden" name="quiz-q-html" id="quiz-q-html" value="<?php echo esc_attr( $post->post_content ); ?>"/>
 		</td>
 		<td valign="top" width="50%">
-		<?php 
-			foreach ( $quiz['answers'] as $answer ) {
-				$id = ( $answer['answer_id'] ) ? $answer['answer_id'] : uniqid();
-				echo '<p><input name="is_correct" value="'.$id.'" type="radio" '.checked( $answer['is_correct'], true, false ) . '/>';
-				echo '<textarea id="" name="answers['.$id.']" rows="3" cols="30">'.$answer['answer_text'].'</textarea></p>';
-			} 
-		?>
+		<table class="widefat">
+			<thead>
+				<tr>
+					<th>Correct?</th>
+					<th>Answer</th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php 
+					foreach ( $quiz['answers'] as $i => $answer ) {
+						$id = ( $answer['answer_id'] ) ? $answer['answer_id'] : uniqid();
+					?>
+				<tr valign="top" class="<?php echo ($i % 2) ? 'alternate' : ''; ?>" >
+					<td><input name="is_correct" value="<?php echo $id; ?>" type="radio" <?php checked( $answer['is_correct'] ); ?> /></td>
+					<td><textarea id="" name="answers[<?php echo $id; ?>]" rows="3" cols="30"><?php echo $answer['answer_text']; ?></textarea></td>
+					<td><input type="text" /></td>
+				</tr>
+					<?php 		
+					} 
+				?>
+			</tbody>
+		</table>
 		</td>
 	</tr>
 </table>
@@ -107,7 +131,6 @@ function wpskillz_save_quiz_meta( $post_ID ) {
 	$old_answers = get_post_meta( $post_ID, 'answers', true );
 	$answers = array();
 
-
 	foreach ( $_POST['answers'] as $id => $answer ) {
 
 		$answer = sanitize_text_field( $answer );
@@ -139,3 +162,25 @@ function wpskillz_save_quiz_meta( $post_ID ) {
 
 }
 
+function wpskillz_difficulty_box() {
+	global $post;
+
+	$explanation = get_post_meta( $post->ID, 'explanation', true );
+	echo <<<EOF
+
+	<table>
+		<tr valign="top">
+			<td>
+				<h2 style="margin-top: 0;">Question difficulty:</h2>
+				
+			</td>
+			<td>
+				<p class="description">Use this quiz for educational purposes. Give a helpful message to users who answer incorrectly as to why the correct answer is designated that way.</p>
+				<textarea id="explanation" name="wpskillz_explanation" rows="10" cols="30">{$explanation}</textarea>
+			</td>
+		</tr>
+	</table>
+EOF;
+
+
+}

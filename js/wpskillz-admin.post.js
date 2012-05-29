@@ -7,7 +7,7 @@
     editor.run();
     editor.refreshPreview();
     return converter.hooks.chain('postConversion', function(text) {
-      $('#quiz-q-html').val(text);
+      jQuery('#quiz-q-html').val(text);
       return text;
     });
   });
