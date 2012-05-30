@@ -51,9 +51,29 @@ function wpskillz_setup_question_data( $post ) {
 		$question_type = get_post_meta( $post->ID, '_question_type', true );
 		$question_type_class = "WPSkillz_Question_{$question_type}";
 		if ( $question_type && class_exists( $question_type_class ) )
-			$question_post = new $$question_type_class( $post );
+			$question_post = new $question_type_class( $post );
 		else 
-			$question_post = new WPSkillz_Question( $post );
+			$question_post = new WPSkillz_Question_multichoice( $post );
+	}
+
+}
+
+//add_action( 'admin_head-post-new.php', 'wpskillz_setup_postnew_admin' );
+
+function wpskillz_setup_postnew_admin() {
+	if ( !isset( $_GET['post_type'] ) || $_GET['post_type'] !== 'quiz' )
+		return;
+	
+	if ( !isset( $_GET['question_type'] ) )
+		wp_die( 'You must specify a question type to add a new question.' );
+
+	$question_type = $_GET['question_type'];
+	$question_type_class = "WPSkillz_Question_{$question_type}";
+
+	if ( class_exists( $question_type_class ) ) {
+		$question_post = new $question_type_class();
+	} else {
+		wp_die( 'Not a valid question type' );
 	}
 
 }

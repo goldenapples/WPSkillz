@@ -316,7 +316,7 @@ function wpskillz_ajax_handle_answer() {
 		if ( $question_type && class_exists( $question_type_class ) )
 			$question_post = new $$question_type_class( $post );
 		else 
-			$question_post = new WPSkillz_Question( $post );
+			$question_post = new WPSkillz_Question_MultiChoice( $post );
 	}
 
 	$response = $question_post->render_answer_mark( $q, $a );

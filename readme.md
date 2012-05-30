@@ -46,6 +46,26 @@ I built this with several primary considerations in mind:
 	question class type that registers different meta boxes on the `post.php`
 	screen.
 
+The _WordPress Way_
+===================
+
+I tried to build the plugin with the guiding principle of doing things _"the
+WordPress way"_. Not the simplest way to do them inside WordPress, or the way
+that a tutorial explaining how to achieve this functionality inside WordPress
+would explain, but the way that these functions would look if they were hashed
+out by core developers for inclusion into WP core functionality. This was
+something of a thought experiment for me: a lot of the choices I ended up
+making as far as object-oriented programming don't really make much sense on
+their own, but I tried to imagine what a "skills test API" would look like in
+WordPress, given the recent move toward adding classes and eschewing globals.
+
+Obviously this approach - creating a class which doesn't interact with the
+built-in objects in WordPress - is less than ideal. If the core development
+continues in the direction that a lot of discussions seem to be heading, in
+particular the discussions about creating a generic WP_Object class, then
+WPSkillz_Question is well suited to extend upon that. But for now... not so
+much.
+
 Live Demo:
 ==========
 
