@@ -1,13 +1,21 @@
 (function() {
 
   jQuery(document).ready(function($) {
-    var converter, editor;
-    converter = Markdown.getSanitizingConverter();
-    editor = new Markdown.Editor(converter);
-    editor.run();
-    editor.refreshPreview();
-    return converter.hooks.chain('postConversion', function(text) {
+    var eConverter, eEditor, qConverter, qEditor;
+    qConverter = Markdown.getSanitizingConverter();
+    qEditor = new Markdown.Editor(qConverter, '-question');
+    qEditor.run();
+    qEditor.refreshPreview();
+    qConverter.hooks.chain('postConversion', function(text) {
       jQuery('#quiz-q-html').val(text);
+      return text;
+    });
+    eConverter = Markdown.getSanitizingConverter();
+    eEditor = new Markdown.Editor(eConverter, '-explanation');
+    eEditor.run();
+    eEditor.refreshPreview();
+    return eConverter.hooks.chain('postConversion', function(text) {
+      jQuery('#quiz-e-html').val(text);
       return text;
     });
   });

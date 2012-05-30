@@ -58,33 +58,13 @@ function wpskillz_setup_question_data( $post ) {
 
 }
 
-//add_action( 'admin_head-post-new.php', 'wpskillz_setup_postnew_admin' );
-
-function wpskillz_setup_postnew_admin() {
-	if ( !isset( $_GET['post_type'] ) || $_GET['post_type'] !== 'quiz' )
-		return;
-	
-	if ( !isset( $_GET['question_type'] ) )
-		wp_die( 'You must specify a question type to add a new question.' );
-
-	$question_type = $_GET['question_type'];
-	$question_type_class = "WPSkillz_Question_{$question_type}";
-
-	if ( class_exists( $question_type_class ) ) {
-		$question_post = new $question_type_class();
-	} else {
-		wp_die( 'Not a valid question type' );
-	}
-
-}
-
 /**
  * Enqueues plugin styles on front end views
  *
  * This is mostly handled on WPSkillz_Question::enqueue_scripts for question pages,
  * but there are a couple other pages we need those styles for, such as the start quiz
  * page and the leaderboards page. Although its not great style, we'll enqueue that 
- * stylesheet on every page, because otherwise there's no logical way or determining 
+ * stylesheet on every page, because otherwise there's no logical way of determining 
  * where we need it short of preprocessing every page to see if it has one of the
  * shortcodes on it.
  */

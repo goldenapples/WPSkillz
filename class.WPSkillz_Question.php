@@ -201,7 +201,7 @@ class WPSkillz_Question {
 	 * meta fields required for the check_answer function defined here. 
 	 *
 	 */
-	function save_post( $post_ID ) {
+	static function save_post( $post_ID ) {
 	}
 	
 	/**
@@ -236,11 +236,18 @@ function wpskillz_quiz_meta_boxes() {
 	if ( isset( $question_post ) ) {
 		$question_type_class = get_class( $question_post );
 	} else {
+		if ( isset( $_GET['post'] ) ) {
+			$question_type = get_post_meta( intval( $_GET['post'] ), '_question_type', true );
+			if ( !$question_type ) $question_type = 'multichoice';
 
-		if ( !isset( $_GET['question_type'] ) )
-			wp_die( 'You must specify a question type to add a new question.' );
+		} else {
 
-		$question_type = $_GET['question_type'];
+			if ( !isset( $_REQUEST['question_type'] ) )
+				wp_die( 'You must specify a question type to add a new question.' );
+
+			$question_type = $_REQUEST['question_type'];
+		}
+
 		$question_type_class = "WPSkillz_Question_{$question_type}";
 
 		if ( !class_exists( $question_type_class ) )
@@ -248,4 +255,20 @@ function wpskillz_quiz_meta_boxes() {
 	}
 
 	$question_type_class::setup_meta_boxes();
+}
+
+add_action( 'save_post', 'wpskillz_save_post' );
+
+function wpskillz_save_post( $post_ID ) {
+	if ( !isset( $_POST['post_type'] ) || $_POST['post_type'] !== 'quiz' )
+		return;
+
+	if ( !isset( $_REQUEST['question_type'] ) )
+		wp_die( 'You must specify a question type to add a new question.' );
+
+	$question_type = $_REQUEST['question_type'];
+	$question_type_class = "WPSkillz_Question_{$question_type}";
+
+	$question_type_class::save_post( $post_ID );
+
 }

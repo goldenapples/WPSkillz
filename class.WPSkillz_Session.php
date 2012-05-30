@@ -116,7 +116,7 @@ class WPSkillz_Session {
 		$this->correct = count( $correct_answers );
 		$this->oftotal = $questions;
 		$this->current = ( is_array( $progress ) && in_array( $current_question, array_keys( $progress ) ) ) ? $complete : $complete + 1;
-		$this->percent = $complete / $questions;
+		$this->percent = ( $questions ) ? $complete / $questions : 0;
 		$this->progress = $progress;
 
 		add_shortcode( 'start-quiz', array( &$this, 'start_quiz_content' ) );
@@ -314,7 +314,7 @@ function wpskillz_ajax_handle_answer() {
 		$question_type = get_post_meta( $post->ID, '_question_type', true );
 		$question_type_class = "WPSkillz_Question_{$question_type}";
 		if ( $question_type && class_exists( $question_type_class ) )
-			$question_post = new $$question_type_class( $post );
+			$question_post = new $question_type_class( $post );
 		else 
 			$question_post = new WPSkillz_Question_MultiChoice( $post );
 	}

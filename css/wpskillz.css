@@ -9,13 +9,13 @@
 
 .wpskillz-answer-choices li {
 	padding: 3px 6px 3px 24px;
-	border: 1px dashed #efefef;
+	border: 1px dashed whitesmoke;
 	border-radius: 3px;
 	text-indent: -18px;
 	margin-bottom: .25em;
 }
 .wpskillz-answer-choices li:hover, li.chosen {
-	background: #efefef; border-style: solid; border-color: #ccc;
+	background: whitesmoke; border-style: solid; border-color: lightgray;
 }
 
 .correct { color: green; }
@@ -27,14 +27,14 @@ li.answer-list.chosen.correct { text-decoration: none; }
 
 a.next-question {
 	padding: 3px 24px;
-	border: 1px dashed #ccc;
+	border: 1px dashed lightgray;
 	border-radius: 3px;
 	margin-bottom: 2em;
 }
 
 div.login-box {
 	padding: 2em;
-	background: #ccc;
+	background: lightgray;
 	font-size: 80%;
 	color: #222;
 	margin-bottom: 1.625em;
@@ -42,4 +42,21 @@ div.login-box {
 
 div.login-box p {
 	margin: 0;
+}
+
+.already-done {
+	color: saddlebrown;
+	font-style: italic;
+}
+
+.answer-explanation {
+	background: beige;
+	border: 1px solid orange;
+	color: saddlebrown;
+	padding: 1em;
+	margin-bottom: 1.625em;
+}
+
+.answer-explanation p:last-child {
+	margin-bottom: 0;
 }

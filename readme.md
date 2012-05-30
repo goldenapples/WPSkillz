@@ -62,8 +62,8 @@ WordPress, given the recent move toward adding classes and eschewing globals.
 Obviously this approach - creating a class which doesn't interact with the
 built-in objects in WordPress - is less than ideal. If the core development
 continues in the direction that a lot of discussions seem to be heading, in
-particular the discussions about creating a generic WP_Object class, then
-WPSkillz_Question is well suited to extend upon that. But for now... not so
+particular the discussions about creating a generic `WP_Object` class, then
+`WPSkillz_Question` is well suited to extend upon that. But for now... not so
 much.
 
 Live Demo:

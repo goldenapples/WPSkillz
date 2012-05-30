@@ -58,8 +58,6 @@ class WPSkillz_Question_MultiChoice extends WPSkillz_Question {
 	public function __construct( &$post ) {
 		parent::__construct( $post );
 		add_filter( 'the_content', array( &$this, 'display_question' ) );
-		add_action( 'save_post', array( &$this, 'save_post' ) );
-		
 	}
 
 	
@@ -83,6 +81,23 @@ class WPSkillz_Question_MultiChoice extends WPSkillz_Question {
 	public function render_answer_mark( $question, $answer, $echo = false, $past_tense = false ) {
 		$correct_answer = $this->check_answer( $answer );
 
+		$answers = get_post_meta( $question, 'answers', true );
+
+		$response = '<ol class="wpskillz-answer-choices">' . "\r\n\t";
+
+		foreach ( $answers as $this_answer ) {
+			$answer_classes = array( 'answer-list' );
+			if ( $answer == $this_answer['answer_id'] )
+				$answer_classes[] = 'chosen';
+			if ( $this_answer['is_correct'] )
+				$answer_classes[] = 'correct';
+			$response .= '<li class="' . implode( ' ', $answer_classes ) . '">';
+			$response .= $this_answer['answer_text'];
+			$response .= '</li>';
+		}
+
+		$response .= '</ol>';
+
 		$mark_language = array(
 			'correct' => array(
 				'present' => __( 'Correct!', 'wpskillz' ),
@@ -97,24 +112,10 @@ class WPSkillz_Question_MultiChoice extends WPSkillz_Question {
 		$correct = ( $correct_answer['mark'] ) ? 'correct' : 'incorrect';
 		$tense = ( $past_tense ) ? 'past' : 'present';
 
-		$response = '<p class="'.$correct.'">'. $mark_language[ $correct ][ $tense ] . '</p>';
-
-		$answers = get_post_meta( $question, 'answers', true );
-
-		$response .= '<ol class="wpskillz-answer-choices">' . "\r\n\t";
-
-		foreach ( $answers as $this_answer ) {
-			$answer_classes = array( 'answer-list' );
-			if ( $answer == $this_answer['answer_id'] )
-				$answer_classes[] = 'chosen';
-			if ( $this_answer['is_correct'] )
-				$answer_classes[] = 'correct';
-			$response .= '<li class="' . implode( ' ', $answer_classes ) . '">';
-			$response .= $this_answer['answer_text'];
-			$response .= '</li>';
-		}
-
-		$response .= '</ol>';
+		$response .= '<div class="answer-explanation">
+			<p class="'.$correct.'">'. $mark_language[ $correct ][ $tense ] . '</p>'
+			. $correct_answer['explanation'] .
+			'</div>';
 
 		global $wpskillz_session;
 
@@ -177,10 +178,10 @@ class WPSkillz_Question_MultiChoice extends WPSkillz_Question {
 			<td valign="top" width="50%">
 				<p class="description">Both question and answers can be formatted with StackOverflow-flavored Markdown.</p>
 				<div class="wmd-panel">
-					<div id="wmd-button-bar"></div>
-					<textarea name="question-body" class="wmd-input" id="wmd-input"><?php echo get_post_meta( $post->ID, 'question', true ); ?></textarea>
+					<div id="wmd-button-bar-question"></div>
+					<textarea name="question-body" class="wmd-input" id="wmd-input-question"><?php echo get_post_meta( $post->ID, 'question', true ); ?></textarea>
 				</div>
-				<div id="wmd-preview" class="wmd-panel wmd-preview"></div>
+				<div id="wmd-preview-question" class="wmd-panel wmd-preview"></div>
 				<input type="hidden" name="quiz-q-html" id="quiz-q-html" value="<?php echo esc_attr( $post->post_content ); ?>"/>
 			</td>
 			<td valign="top" width="50%">
@@ -209,20 +210,28 @@ class WPSkillz_Question_MultiChoice extends WPSkillz_Question {
 			</td>
 		</tr>
 	</table>
+	<input type="hidden" name="question_type" value="multichoice" />
 		<?
 	}
 
 	static function explanation_box() {
 		global $post;
 
-		$explanation = get_post_meta( $post->ID, 'explanation', true );
+		$explanation_html = get_post_meta( $post->ID, 'explanation_html', true );
+		$explanation_md = get_post_meta( $post->ID, 'explanation_md', true );
+
 		echo <<<EOF
 
 		<table>
 			<tr valign="top">
 				<td>
 					<p class="description">Use this quiz for educational purposes. Give a helpful message to users who answer incorrectly as to why the correct answer is designated that way.</p>
-					<textarea id="explanation" name="wpskillz_explanation" rows="10" cols="30">{$explanation}</textarea>
+				<div class="wmd-panel">
+					<div id="wmd-button-bar-explanation"></div>
+					<textarea id="wmd-input-explanation" class="wmd-input" name="wpskillz_explanation" rows="10" cols="30">{$explanation_md}</textarea>
+				</div>
+				<div id="wmd-preview-explanation" class="wmd-panel wmd-preview"></div>
+				<input type="hidden" name="quiz-e-html" id="quiz-e-html" value="{$explanation_html}"/>
 				</td>
 			</tr>
 		</table>
@@ -348,10 +357,13 @@ EOF;
 	 * meta fields required for the check_answer function defined here. 
 	 *
 	 */
-	function save_post( $post_ID ) {
-		if ( !isset( $_POST['post_type'] ) || $_POST['post_type'] !== 'quiz' )
-			return;
+	static function save_post( $post_ID ) {
 
+		/*
+		 * Constant definition necessary to avoid infinite loop - otherwise the 
+		 * 'save_post' hook is called when post is updating, thus running this 
+		 * function again.
+		 */
 		if ( defined( 'UPDATING_POST' ) && UPDATING_POST )
 			return;
 
@@ -370,6 +382,8 @@ EOF;
 			)
 		);
 
+		update_post_meta( $post_ID, '_question_type', 'multichoice' );
+	
 		update_post_meta( $post_ID, 'question', $_POST['question-body'] );
 
 		$old_answers = get_post_meta( $post_ID, 'answers', true );
@@ -405,6 +419,11 @@ EOF;
 
 		update_post_meta( $post_ID, 'answers', $answers );
 
+		update_post_meta( $post_ID, 'explanation_html', 
+			wp_filter_post_kses( $_POST['quiz-e-html'] ) );
+		update_post_meta( $post_ID, 'explanation_md', 
+			wp_filter_post_kses( $_POST['wpskillz_explanation'] ) );	
+
 	}
 
 	/**
@@ -429,14 +448,15 @@ EOF;
 
 		$question = $this->ID;
 		$answers = get_post_meta( $question, 'answers', true );
-		$explanation = get_post_meta( $question, '_explanation', true );
+		$explanation = get_post_meta( $this->ID, 'explanation_html', true );
 
-		$correct_answer = array_filter( 
+		$correct_answers = array_filter( 
 			$answers,
 			create_function( '$a', 'return $a["is_correct"];' )
 		);
 
-		$is_answer_correct = ( $answer == $correct_answer[0]['answer_id'] );
+		$correct_answer = array_shift( $correct_answers );
+		$is_answer_correct = ( $answer == $correct_answer['answer_id'] );
 
 		$current_question_result = array(
 			$question => array(
