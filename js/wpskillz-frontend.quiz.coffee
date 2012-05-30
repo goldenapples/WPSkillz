@@ -8,7 +8,6 @@ jQuery(document).ready ($) ->
 				question: wpSkillz.thisQuestion
 				guess: $(this).data('answer')
 			success: (r) ->
-				console.log r
 				response = JSON.parse r
 				$('#wpskillz-quiz-answers').html response['answer_section_text']
 		false

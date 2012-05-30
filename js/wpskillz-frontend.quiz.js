@@ -12,7 +12,6 @@
         },
         success: function(r) {
           var response;
-          console.log(r);
           response = JSON.parse(r);
           return $('#wpskillz-quiz-answers').html(response['answer_section_text']);
         }

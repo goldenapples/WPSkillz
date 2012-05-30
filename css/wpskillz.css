@@ -21,4 +21,25 @@
 .correct { color: green; }
 .incorrect { color: red; }
 
-li.correct { background: lightgreen; border-color: green; }
+li.correct, li.correct:hover { background: lightgreen; border-color: green; }
+li.answer-list.chosen { text-decoration: line-through; }
+li.answer-list.chosen.correct { text-decoration: none; }
+
+a.next-question {
+	padding: 3px 24px;
+	border: 1px dashed #ccc;
+	border-radius: 3px;
+	margin-bottom: 2em;
+}
+
+div.login-box {
+	padding: 2em;
+	background: #ccc;
+	font-size: 80%;
+	color: #222;
+	margin-bottom: 1.625em;
+}
+
+div.login-box p {
+	margin: 0;
+}

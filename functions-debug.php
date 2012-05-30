@@ -18,9 +18,7 @@ function wpskillz_debug_bar_panel( $panels ) {
 
 				echo "<div id='debug-bar-wpskillz'>";
 
-				global $current_user;
-
-				$progress = wpskillz_user_progress();
+				global $current_user, $wpskillz_session;
 
 				echo <<<EOF
 					<h3>Current User:</h3>
@@ -31,14 +29,14 @@ function wpskillz_debug_bar_panel( $panels ) {
 
 					<h3>Test Progress:</h3>
 					<ul>
-						<li>Completed {$progress['complete']} of {$progress['oftotal']} questions</li>
-						<li>Correct answers: {$progress['correct']} of {$progress['complete']}</li>
+						<li>Completed {$wpskillz_session->complete} of {$wpskillz_session->oftotal} questions</li>
+						<li>Correct answers: {$wpskillz_session->correct} of {$wpskillz_session->complete}</li>
 					</ul>
 EOF;
 
 				echo '<h3>$progress</h3>';
 
-				var_dump( $progress['questions'] );
+				var_dump( $wpskillz_session->progress );
 
 				echo '<br><br>';
 

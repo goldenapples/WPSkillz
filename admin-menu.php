@@ -1,6 +1,6 @@
 <?php
 
-add_action('admin_menu','wpskillz_admin_pages');
+//add_action('admin_menu','wpskillz_admin_pages');
 
 function wpskillz_admin_pages() {
 	add_submenu_page(
@@ -13,6 +13,44 @@ function wpskillz_admin_pages() {
 		'wpskillz_plugin_settings'
 	);
 }
+
+add_action( 'admin_menu', 'wpskillz_question_types' );
+
+/**
+ * Replaces the "Add new question" link from the admin menu with links specific
+ * to each of the defined question types.
+ *
+ * This is necessary because meta boxes may be different from one question type 
+ * to another. Its a fairly expensive function (filtering through all the 
+ * declared class types to find ones which inherit from WPSkillz_Question), so 
+ * it should only be run in the admin section.
+ */
+function wpskillz_question_types() {
+	$all_classes = get_declared_classes();
+	$question_types = array_filter( 
+		$all_classes,
+		create_function( '$c', 'return in_array( "WPSkillz_Question", class_parents( $c ) );' )
+	);
+	remove_submenu_page( 'edit.php?post_type=quiz', 'post-new.php?post_type=quiz' );
+	foreach ( $question_types as $question_class ) {
+		$question_type_text = $question_class::$question_type;
+		$question_type_slug = $question_class::$question_slug;
+		add_submenu_page( 
+			'edit.php?post_type=quiz', 
+			sprintf( __( 'Add new %s question', 'wpskillz' ), $question_type_text ),
+			sprintf( __( 'Add new %s question', 'wpskillz' ), $question_type_text ),
+			'edit_posts',
+			'post-new.php?post_type=quiz&question_type='.$question_type_slug,
+			null
+		);
+	}
+
+//	wp_die( print_r( $question_types, true ) );
+
+
+}
+
+
 
 function wpskillz_plugin_settings() {
 

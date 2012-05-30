@@ -57,3 +57,20 @@ function wpskillz_setup_question_data( $post ) {
 	}
 
 }
+
+/**
+ * Enqueues plugin styles on front end views
+ *
+ * This is mostly handled on WPSkillz_Question::enqueue_scripts for question pages,
+ * but there are a couple other pages we need those styles for, such as the start quiz
+ * page and the leaderboards page. Although its not great style, we'll enqueue that 
+ * stylesheet on every page, because otherwise there's no logical way or determining 
+ * where we need it short of preprocessing every page to see if it has one of the
+ * shortcodes on it.
+ */
+add_action( 'wp_enqueue_scripts', 'wpskillz_enqueue_frontend_stylesheet' );
+
+function wpskillz_enqueue_frontend_stylesheet() {
+	wp_enqueue_style( 'wpskillz', plugins_url( '/css/wpskillz.css', __FILE__ ) );
+}
+

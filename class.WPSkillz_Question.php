@@ -17,6 +17,27 @@
 **/
 class WPSkillz_Question {
 
+	/**
+	 * The post ID this question references
+	 *
+	 * @var int
+	 **/
+	var $ID;
+
+	/**
+	 * String to represent the question type in the admin menu
+	 *
+	 * @var string
+	 **/
+	public static $question_type = '';
+
+	/**
+	 * Slug of the term representing the question type
+	 *
+	 * @var string
+	 **/
+	public static $question_slug = '';
+
 	/*
 	 * Constructor function: called on 'the_post' hook in setup_postdata(). 
 	 *
@@ -33,6 +54,8 @@ class WPSkillz_Question {
 		 * to catch the 'wp_enqueue_scripts' hook. This is sort of a hackaround.
 		 */
 		if ( !is_admin() ) $this->enqueue_scripts();
+
+		$this->ID = $post->ID;
 	}
 
 	/*
@@ -89,16 +112,17 @@ class WPSkillz_Question {
 		 * explanation. Otherwise just append answer choices to question.
 		 */
 		if ( is_array( $wpskillz_session->progress ) && 
-				in_array( $post->ID, array_keys( $wpskillz_session->progress ) ) ) {
+				in_array( $this->ID, array_keys( $wpskillz_session->progress ) ) ) {
 
-			$date = $wpskillz_session->progress['questions'][$post->ID]['date'];
+			$date = $wpskillz_session->progress[$this->ID]['date'];
 			$date_format_local = mysql2date( get_option('date_format'), $date, true );
 
 			$content = '<p class="already-done">You\'ve answered this question (on '.$date_format_local.')</p>' . $content;
 
 			$content .= '<div id="wpskillz-quiz-answers">';
 
-			$content .= $this->render_answer_mark( $post->ID, $wpskillz_session->progress['questions'][$post->ID]['answer_given'] );
+			$answer_mark = $this->render_answer_mark( $this->ID, $wpskillz_session->progress[$this->ID]['answer_given'], false, true );
+			$content .= $answer_mark['answer_section_text'];
 
 			$content .= '</div>';
 
@@ -130,21 +154,34 @@ EOF;
 	 * it will return the HTML content to be loaded into div#wpskillz-quiz-answers, or it can be called
 	 * directly, in which case it can be used to echo the content.
 	 *
-	 * @uses	wpskillz_handle_answer()	Called to check whether the answer given is correct, and update
+	 * @uses	$this->check_answer()	Called to check whether the answer given is correct, and update
 	 * 										usermeta and session with progress variables
 	 *
-	 * @param	int			question ID
-	 * @param	unknown		answer provided
-	 * @param	bool		whether to echo (true) or return (false) response
+	 * @param	int			$question	question ID
+	 * @param	unknown		$answer		answer provided
+	 * @param	bool		$echo		whether to echo (true) or return (false) response
+	 * @param	bool		$past_tense	if reviewing an old answer, changes wording to past tense
 	 * @return	void|str
 	 *
 	 */
-	public function render_answer_mark( $question, $answer, $echo = false ) {
-		$correct_answer = $this->handle_answer( $question, $answer );
+	public function render_answer_mark( $question, $answer, $echo = false, $past_tense = false ) {
+		$correct_answer = $this->check_answer( $answer );
 
-		$response = ( $correct_answer['mark'] ) ? 
-			'<p class="correct">Correct!</p>' :
-			'<p class="incorrect">Sorry, that is the wrong answer.</p>';
+		$mark_language = array(
+			'correct' => array(
+				'present' => __( 'Correct!', 'wpskillz' ),
+				'past' => __( 'You answered correctly.', 'wpskillz' )
+			),
+			'incorrect' => array(
+				'present' => __( 'Sorry, that is the wrong answer.', 'wpskillz' ),
+				'past' => __( 'You answered incorrectly.', 'wpskillz' )
+			)
+		);
+
+		$correct = ( $correct_answer['mark'] ) ? 'correct' : 'incorrect';
+		$tense = ( $past_tense ) ? 'past' : 'present';
+
+		$response = '<p class="'.$correct.'">'. $mark_language[ $correct ][ $tense ] . '</p>';
 
 		$answers = get_post_meta( $question, 'answers', true );
 
@@ -163,12 +200,24 @@ EOF;
 
 		$response .= '</ol>';
 
-		$response .= wpskillz_next_question_link( false );
+		global $wpskillz_session;
 
-		if ( $echo )
+		if ( !is_user_logged_in() )
+			$response .= $wpskillz_session->login_invitation();
+		
+		$response .= $wpskillz_session->next_question_link( false );
+
+		/*
+		 * If echoing, just echo the generated html box now. Otherwise, if being called through Ajax,
+		 * add the generated html as an additional element to the array returned by check_answer()
+		 * and return the entire array.
+		 */
+		if ( $echo ) {
 			echo $response;
-		else
-			return $response;
+		} else {
+			$correct_answer['answer_section_text'] = $response;
+			return $correct_answer;
+		}
 
 	}
 
@@ -383,33 +432,25 @@ EOF;
 	}
 
 	/**
-	 *
-	 * Check if answer is correct or not; mark answer and return an array containing 
-	 * 		[mark]				bool	Correct/incorrect
-	 * 		[correct_answer]	str		The correct answer
-	 * 		[explanation]		str		If provided, the explanation provided in question
+	 * Check if answer is correct or not
 	 *
 	 * Can be called through Ajax or directly.
 	 *
-	 * @param	unknown	Answer provided
+	 * Calls WPSkillz_Session::update progress(), marks answer and returns an array containing 
+	 * 		[mark]				bool	Correct/incorrect
+	 * 		[correct_answer]	str		The correct answer
+	 * 		[explanation]		str		If provided, the explanation provided for the correct answer
 	 *
+	 * @uses	WPSkillz_Session::update_progress()
+	 *
+	 * @param	unknown	Answer provided
 	 * @return	array 	See keys listed above
 	 */
 	function check_answer( $answer ) {
 
-		global $current_user;
-
-		if ( is_user_logged_in() )
-			$progress = get_user_meta( $current_user->ID, 'wpskillz_test', true );
-		else 
-			$progress = $_SESSION['wpskillz_test'];
-
-		if ( empty( $progress ) )
-			$progress = array();
-
 		$question = $this->ID;
-
 		$answers = get_post_meta( $question, 'answers', true );
+		$explanation = get_post_meta( $question, '_explanation', true );
 
 		$correct_answer = array_filter( 
 			$answers,
@@ -418,20 +459,21 @@ EOF;
 
 		$is_answer_correct = ( $answer == $correct_answer[0]['answer_id'] );
 
-		$progress[$question] = array(
-			'answer_given' => $answer,
-			'correct' => $is_answer_correct,
-			'date' => current_time( 'mysql' )
+		$current_question_result = array(
+			$question => array(
+				'answer_given' => $answer,
+				'correct' => $is_answer_correct,
+				'date' => current_time( 'mysql' )
+			)
 		);
 
-		// Update progress session variable and user meta
-		$_SESSION['wpskillz_test'] = maybe_serialize( $progress );
-		if ( is_user_logged_in() )
-			update_user_meta( $current_user->ID, 'wpskillz_test', $progress );
+		global $wpskillz_session;
+		$wpskillz_session->update_progress( $current_question_result );
 
 		return array(
 			'mark'	=> $is_answer_correct,
-			'correct_answer' => $correct_answer
+			'correct_answer' => $correct_answer,
+			'explanation' => $explanation
 		);
 	}
 

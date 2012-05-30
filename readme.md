@@ -1,3 +1,5 @@
+**WPSkillz** is my attempt at creating a smartly-designed and usable
+skills-testing plugin for WordPress.
 
 Design Considerations:
 ======================
@@ -20,8 +22,33 @@ I built this with several primary considerations in mind:
 
 	So I included two features in this quiz toward that goal:
 
-	+	Each question in the WP_Skillz_Question_MultiChoice class has an
+	+	Each question in the `WP_Skillz_Question_MultiChoice` class has an
 		'explanation' field, to be displayed on an incorrect guess. In addition,
 		there is also space to enter separate explanations for each of the
 		incorrect answers, to explain exactly _why_ they are wrong.
+	+	**Question Review** - This is the killer feature that sites like
+		smarterer.com get right and most traditional quiz plugins fail at; letting
+		users rank questions, edit them if necessary, and add new questions.
+		Otherwise the test grows stale rapidly, and poorly-worded questions
+		remain as a drag on the curve. The test becomes a judge of people's
+		ability to parse confusingly-worded questions rather than expertise in
+		the subject matter,
 
+* 	**Editability** - After some hesitation, I decided to make Stack
+	Overflow-flavored Markdown the default editor style. This has the benefit of
+	speed in editing, familiarity, and ease of deployment - Markdown editors are
+	lightweight, can be deployed on the front end as well as the administrative
+	screens, and do not have issues being used in meta boxes like the
+	wp_editor() function does. I know there are a few drawbacks: for a quiz
+	which is specifically testing WordPress knowledge, it is a shame not to use
+	as much of WordPress's standard API as possible. But I thought the benefits
+	outweighed the drawbacks. And if not, its fairly easy to build another 
+	question class type that registers different meta boxes on the `post.php`
+	screen.
+
+Live Demo:
+==========
+
+Live plugin demo populated with sample questions is online at
+[wpskillz.com](http://wpskillz.com). Try your hand - registration is open and
+scores will be tallied!

@@ -35,7 +35,6 @@ function wpskillz_post_type_registration() {
 } 
 
 
-
 /*
  *	Paul's Simple Diff Algorithm v 0.1
  *	(C) Paul Butler 2007 <http://www.paulbutler.org/>
