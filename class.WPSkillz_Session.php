@@ -147,10 +147,10 @@ class WPSkillz_Session {
 			global $current_user;
 			update_user_meta( $current_user->ID, 'wpskillz_test', self::$progress );
 
-			// Score is going to be on the typical 800 point scale
-			$score = intval( 800 * self::$correct / self::$oftotal );
-			update_user_meta( $current_user->ID, 'wpskillz_score', $score );
-			update_user_meta( $current_user->ID, 'wpskillz_date', date( get_option( 'date_format' ) ) );
+			$correct = count( array_filter( self::progress, create_function( '$a', 'return ( isset( $a["correct"] ) && $a["correct"] );' ) ) );
+
+			update_user_meta( $current_user->ID, 'wpskillz_score', $correct );
+			update_user_meta( $current_user->ID, 'wpskillz_date', date( get_option( 'date_format' ) ));
 
 		}
 	}
@@ -388,9 +388,12 @@ function wpskillz_leaderboards( $atts = null ) {
 				</thead>
 				<tbody>';
 
+		$number_questions = WPSkillz_Session::$oftotal;
+
 		foreach ( $leaders as $leader ) {
 			$avatar = get_avatar( $leader->ID, 32 );
-			$test_score = get_user_meta( $leader->ID, 'wpskillz_score', true );
+			$correct_count = get_user_meta( $leader->ID, 'wpskillz_score', true );
+			$test_score = intval( 800 * $correct_count / $number_questions );
 			$test_date = get_user_meta( $leader->ID, 'wpskillz_date', true );
 
 			$return .= "
