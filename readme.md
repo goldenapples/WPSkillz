@@ -32,7 +32,7 @@ I built this with several primary considerations in mind:
 		Otherwise the test grows stale rapidly, and poorly-worded questions
 		remain as a drag on the curve. The test becomes a judge of people's
 		ability to parse confusingly-worded questions rather than expertise in
-		the subject matter,
+		the subject matter.
 
 * 	**Editability** - After some hesitation, I decided to make Stack
 	Overflow-flavored Markdown the default editor style. This has the benefit of
@@ -69,6 +69,6 @@ much.
 Live Demo:
 ==========
 
-Live plugin demo populated with sample questions is online at
+<del>Live plugin demo populated with sample questions is online at
 [wpskillz.com](http://wpskillz.com). Try your hand - registration is open and
-scores will be tallied!
+scores will be tallied!</del> Live demo not functional yet, but it will be soon.
