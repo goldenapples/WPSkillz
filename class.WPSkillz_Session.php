@@ -26,14 +26,12 @@ function wpskillz_session_start( ) {
 add_action( 'wp_login', 'wpskillz_merge_session_progress', 10, 2 );
 
 function wpskillz_merge_session_progress( $user_login, $user ) {
-	error_log( 'logging in..?' );
 	WPSkillz_Session::login( $user_login, $user );
 }
 
 /**
  * The WPSkillz_Session class.
  *
- * Instantiated on init, and accessible through the global variable $wpskillz_session
  *
  * @package wpskillz
  * @author 	goldenapples
