@@ -1,23 +1,28 @@
 (function() {
 
   jQuery(document).ready(function($) {
-    var eConverter, eEditor, qConverter, qEditor;
-    qConverter = Markdown.getSanitizingConverter();
-    qEditor = new Markdown.Editor(qConverter, '-question');
-    qEditor.run();
-    qEditor.refreshPreview();
-    qConverter.hooks.chain('postConversion', function(text) {
-      jQuery('#quiz-q-html').val(text);
-      return text;
+    var createMarkdownEditor;
+    createMarkdownEditor = function(suffix, previewElt) {
+      var converter, editor;
+      converter = Markdown.getSanitizingConverter();
+      editor = new Markdown.Editor(converter, suffix);
+      editor.run();
+      editor.refreshPreview();
+      if (previewElt) {
+        return converter.hooks.chain('postConversion', function(text) {
+          jQuery(previewElt).val(text);
+          return text;
+        });
+      }
+    };
+    createMarkdownEditor('-question', '#quiz-q-html');
+    createMarkdownEditor('-explanation', '#quiz-e-html');
+    $('tr.wmd-panel').each(function() {
+      var key;
+      key = $(this).data('editorkey');
+      return createMarkdownEditor("-" + key, "#quiz-" + key + "-html");
     });
-    eConverter = Markdown.getSanitizingConverter();
-    eEditor = new Markdown.Editor(eConverter, '-explanation');
-    eEditor.run();
-    eEditor.refreshPreview();
-    return eConverter.hooks.chain('postConversion', function(text) {
-      jQuery('#quiz-e-html').val(text);
-      return text;
-    });
+    return null;
   });
 
 }).call(this);

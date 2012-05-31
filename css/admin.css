@@ -10,8 +10,14 @@
 	border: 1px solid DarkGray;
 }
 
+tr.wmd-panel .wmd-input {
+	min-width: 240px;
+	height: 72px;
+}
+
 .wmd-preview { 
-	background-color: #c0e0ff; 
+	padding: 6px;
+	background-color: #e0f0ff; 
 }
 
 .wmd-button-row {

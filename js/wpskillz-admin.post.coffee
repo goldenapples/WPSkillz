@@ -1,15 +1,18 @@
 jQuery(document).ready ($) ->
-	qConverter = Markdown.getSanitizingConverter()
-	qEditor = new Markdown.Editor qConverter, '-question'
-	qEditor.run()
-	qEditor.refreshPreview()
-	qConverter.hooks.chain 'postConversion', (text) ->
-		jQuery('#quiz-q-html').val text
-		text
-	eConverter = Markdown.getSanitizingConverter()
-	eEditor = new Markdown.Editor eConverter, '-explanation'
-	eEditor.run()
-	eEditor.refreshPreview()
-	eConverter.hooks.chain 'postConversion', (text) ->
-		jQuery('#quiz-e-html').val text
-		text
+	createMarkdownEditor = ( suffix, previewElt ) ->
+		converter = Markdown.getSanitizingConverter()
+		editor = new Markdown.Editor converter, suffix
+		editor.run()
+		editor.refreshPreview()
+		if previewElt
+			converter.hooks.chain 'postConversion', (text) ->
+				jQuery(previewElt).val text
+				text
+
+	createMarkdownEditor '-question', '#quiz-q-html'
+	createMarkdownEditor '-explanation', '#quiz-e-html'
+	$('tr.wmd-panel').each ()->
+		key = $(this).data 'editorkey'
+		createMarkdownEditor "-#{key}", "#quiz-#{key}-html"
+	null
+

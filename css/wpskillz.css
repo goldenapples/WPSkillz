@@ -8,18 +8,29 @@
 }
 
 .wpskillz-answer-choices li {
-	padding: 3px 6px 3px 24px;
-	border: 1px dashed whitesmoke;
+	padding: 6px 6px 6px 24px;
+	border: 1px dashed lightgray;
 	border-radius: 3px;
 	text-indent: -18px;
 	margin-bottom: .25em;
 }
+
+.wpskillz-answer-choices li p:first-child {
+	display: inline;
+}
+
+a.answer-text {
+	text-decoration: none;
+	color: inherit;
+}
+
 .wpskillz-answer-choices li:hover, li.chosen {
 	background: whitesmoke; border-style: solid; border-color: lightgray;
 }
 
 .correct { color: green; }
 .incorrect { color: red; }
+
 
 li.correct, li.correct:hover { background: lightgreen; border-color: green; }
 li.answer-list.chosen { text-decoration: line-through; }
@@ -52,7 +63,7 @@ div.login-box p {
 .answer-explanation {
 	background: beige;
 	border: 1px solid orange;
-	color: saddlebrown;
+	color: #333;
 	padding: 1em;
 	margin-bottom: 1.625em;
 }

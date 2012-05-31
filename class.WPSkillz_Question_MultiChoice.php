@@ -185,11 +185,12 @@ class WPSkillz_Question_MultiChoice extends WPSkillz_Question {
 				<input type="hidden" name="quiz-q-html" id="quiz-q-html" value="<?php echo esc_attr( $post->post_content ); ?>"/>
 			</td>
 			<td valign="top" width="50%">
-			<table class="widefat">
+			<table class="widefat" id="wpskillz-answers">
 				<thead>
 					<tr>
 						<th>Correct?</th>
 						<th>Answer</th>
+						<th>Preview</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -197,10 +198,15 @@ class WPSkillz_Question_MultiChoice extends WPSkillz_Question {
 						foreach ( $quiz['answers'] as $i => $answer ) {
 							$id = ( $answer['answer_id'] ) ? $answer['answer_id'] : uniqid();
 						?>
-					<tr valign="top" class="<?php echo ($i % 2) ? 'alternate' : ''; ?>" >
+							<tr valign="top" class="wmd-panel <?php echo ($i % 2) ? 'alternate' : ''; ?>" data-editorkey="<?php echo $id; ?>" >
 						<td><input name="is_correct" value="<?php echo $id; ?>" type="radio" <?php checked( $answer['is_correct'] ); ?> /></td>
-						<td><textarea id="" name="answers[<?php echo $id; ?>]" rows="3" cols="30"><?php echo $answer['answer_text']; ?></textarea></td>
-						<td><input type="text" /></td>
+						<td>
+						<div id="wmd-button-bar-<?php echo $id; ?>" style="display:none;"></div>
+							<textarea id="wmd-input-<?php echo $id; ?>" name="answers[<?php echo $id; ?>][answer_md]" class="wmd-panel wmd-input" rows="3" cols="30"><?php echo $answer['answer_md']; ?></textarea></td>
+						<td>
+							<div id="wmd-preview-<?php echo $id; ?>" class="wmd-panel wmd-preview"></div>
+							<input type="hidden" name="answers[<?php echo $id; ?>][answer_html]" id="quiz-<?php echo $id; ?>-html" />
+						</td>
 					</tr>
 						<?php 		
 						} 
@@ -283,11 +289,10 @@ EOF;
 					foreach ( $answers as $answer ) {
 						$non_ajax_url = add_query_arg( 'guess', $answer['answer_id'], get_permalink() );
 						$content .= <<<EOF
-<li>
+
 <a name="{$answer['answer_id']}" data-answer="{$answer['answer_id']}" class="answer-text" href="{$non_ajax_url}">
-{$answer['answer_text']}
+	<li>{$answer['answer_text']}</li>
 </a>
-</li>
 EOF;
 					}
 					$content .= '</ol></div>';
@@ -391,7 +396,7 @@ EOF;
 
 		foreach ( $_POST['answers'] as $id => $answer ) {
 
-			$answer = sanitize_text_field( $answer );
+			$answer_html = wp_filter_post_kses( $answer['answer_html'] );
 			$history = ( isset( $old_answers[$id] ) && isset( $old_answers[$id]['history'] ) ) ?
 				$old_answers[$id]['history'] : array();
 		
@@ -406,12 +411,13 @@ EOF;
 				$history[] = array(
 					'user' => $current_user->ID,
 					'date' => current_time( 'mysql' ),
-					'diff' => htmlDiff( $old_answers['id']['answer_text'], $answer )
+					'diff' => htmlDiff( $old_answers['id']['answer_text'], $answer_html )
 				);
 
 			$answers[] = array(
 				'answer_id' => $id,
-				'answer_text' => $answer,
+				'answer_text' => $answer_html,
+				'answer_md' => $answer['answer_md'],
 				'is_correct' => ( $_POST['is_correct'] == $id ),
 				'history' => $history
 			);
