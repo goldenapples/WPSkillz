@@ -146,6 +146,11 @@ class WPSkillz_Session {
 		if ( is_user_logged_in() ) {
 			global $current_user;
 			update_user_meta( $current_user->ID, 'wpskillz_test', self::$progress );
+
+			// Score is going to be on the typical 800 point scale
+			$score = intval( 800 * self::$correct / self::$oftotal );
+			update_user_meta( $current_user->ID, 'wpskillz_score', $score );
+
 		}
 	}
 
@@ -196,12 +201,19 @@ class WPSkillz_Session {
 			if ( empty( $text ) )
 				$text = __( 'Next question', 'wpskillz' );
 			$link_text = '<p><a class="next-question" href="'.$link.'" title="'.esc_attr($text).'">'.$text.'</a></p>';
-		} else {
+		} else { 
+
+			// I really didn't want to build out an options page for this one option, so the value $leaderboards page 
+			// is determined by searching for the shortcode [leaderboards] on all pages
+			global $wpdb;
+			$leaderboards_page = $wpdb->get_var( "SELECT ID from {$wpdb->posts} WHERE post_status = 'publish' AND post_content LIKE '%[leaderboard%' LIMIT 1" );
+			if ( $leaderboards_page )
+				$leaderboards_link = '<a href="' . get_permalink( $leaderboards_page ) . '">' . __( 'View leaderboards', 'wpskillz' ) .'</a>';
+				
 			$link_text = '
 				<div class="login-box">
 					<p>' . __( 'You have completed all the available questions.', 'wpskillz' ) . '</p>
-					<p>' . __( 'See how you stack up against other test-takers!', 'wpskillz' ) . ' &nbsp;' .
-					'<a href="leaderboards">' . __( 'View leaderboards', 'wpskillz' ) .'</a></p>
+					<p>' . __( 'See how you stack up against other test-takers!', 'wpskillz' ) . ' &nbsp;' . $leaderboards_link . '</p>
 				</div>';
 		}
 
@@ -340,6 +352,60 @@ function wpskillz_ajax_handle_answer() {
 
 add_shortcode( 'leaderboards', 'wpskillz_leaderboards' );
 
-function wpskillz_leaderboards( $args ) {
-	$args = shortcode_atts( $args, array( 'leaders' => 10 ) );
+function wpskillz_leaderboards( $atts = null ) {
+	$args = shortcode_atts( array( 'number' => 0 ), $atts );
+
+	// Since there aren't filters on the individual parts of WP_User_Query, add an action to tweak
+	// the whole query object here:
+	add_action( 'pre_user_query', 'sort_by_test_score' );
+
+	function sort_by_test_score( $query ) {
+		global $wpdb;
+		$query->query_orderby = "ORDER BY ( 0 + {$wpdb->usermeta}.meta_value ) DESC";
+	}
+
+	$leaders_query = new WP_User_Query( array(
+		'meta_key' => 'wpskillz_score',
+		'orderby' => 'meta_value_num',
+		'order' => 'DESC',
+		'number' => intval( $args['number'] )
+	) );
+
+	// ... and remove it here
+	remove_action( 'pre_user_query', 'sort_by_test_score' );
+
+	$leaders = $leaders_query->get_results();
+
+	if ( $leaders ) {
+		$return = '
+			<table class="leaderboards">
+				<thead>
+					<th width="48">' . __( 'User', 'wpskillz' ) . '</th>
+					<th>&nbsp;</th>
+					<th>' . __( 'Score', 'wpskillz' ) . '</th>
+					<th>' . __( 'Date', 'wpskillz' ) . '</th>
+				</thead>
+				<tbody>';
+
+		foreach ( $leaders as $leader ) {
+			$avatar = get_avatar( $leader->ID, 32 );
+			$test_score = get_user_meta( $leader->ID, 'wpskillz_score', true );
+			$test_date = get_user_meta( $leader->ID, 'wpskillz_date', true );
+
+			$return .= "
+				<tr valign='top'>
+					<td>$avatar</td>
+					<td>{$leader->display_name}</td>
+					<td>$test_score</td>
+					<td>$test_date</td>
+				</tr>
+				";
+
+		}
+
+	$return .= '</table>';
+
+	}
+	return $return;
+
 }
