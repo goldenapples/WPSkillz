@@ -150,6 +150,7 @@ class WPSkillz_Session {
 			// Score is going to be on the typical 800 point scale
 			$score = intval( 800 * self::$correct / self::$oftotal );
 			update_user_meta( $current_user->ID, 'wpskillz_score', $score );
+			update_user_meta( $current_user->ID, 'wpskillz_date', date( get_option( 'date_format' ) ) );
 
 		}
 	}
