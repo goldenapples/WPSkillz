@@ -147,7 +147,7 @@ class WPSkillz_Session {
 			global $current_user;
 			update_user_meta( $current_user->ID, 'wpskillz_test', self::$progress );
 
-			$correct = count( array_filter( self::progress, create_function( '$a', 'return ( isset( $a["correct"] ) && $a["correct"] );' ) ) );
+			$correct = count( array_filter( self::$progress, create_function( '$a', 'return ( isset( $a["correct"] ) && $a["correct"] );' ) ) );
 
 			update_user_meta( $current_user->ID, 'wpskillz_score', $correct );
 			update_user_meta( $current_user->ID, 'wpskillz_date', date( get_option( 'date_format' ) ));
