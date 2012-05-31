@@ -8,22 +8,15 @@ Version: 0.1
 License: GPL v2
 */
 
-// Post type registration, bootstrap and functions which should be set up on all pageloads
-require_once( 'functions-init.php' ); 
-
-// Include options page on admin page views
-if ( is_admin() )
-	require_once( 'admin-menu.php' ); 
-
-// Session functions for tracking logged-in or anonymous users during quiz.
-//require_once( 'functions-session.php' ); 
 
 // Debug bar plugin to track progress. OK to remove this in production.
-require_once( 'functions-debug.php' ); 
+// require_once( 'functions-debug.php' ); 
 
 // Class definitions for all question types to be registered
 require_once( 'class.WPSkillz_Question.php' );
 require_once( 'class.WPSkillz_Question_MultiChoice.php' );
+
+// Session variable setup and definition
 require_once( 'class.WPSkillz_Session.php' );
 
 register_activation_hook( __FILE__, 'wpskillz_activation' );
@@ -83,9 +76,149 @@ function wpskillz_setup_question_data( $post ) {
  * where we need it short of preprocessing every page to see if it has one of the
  * shortcodes on it.
  */
-add_action( 'wp_enqueue_scripts', 'wpskillz_enqueue_frontend_stylesheet' );
-
 function wpskillz_enqueue_frontend_stylesheet() {
 	wp_enqueue_style( 'wpskillz', plugins_url( '/css/wpskillz.css', __FILE__ ) );
 }
+
+add_action( 'wp_enqueue_scripts', 'wpskillz_enqueue_frontend_stylesheet' );
+
+
+/**
+ * Replaces the "Add new question" link from the admin menu with links specific
+ * to each of the defined question types.
+ *
+ * This is necessary because meta boxes may be different from one question type 
+ * to another. Its a fairly expensive function (filtering through all the 
+ * declared class types to find ones which inherit from WPSkillz_Question), so 
+ * it should only be run in the admin section.
+ */
+function wpskillz_question_types() {
+	$all_classes = get_declared_classes();
+	$question_types = array_filter( 
+		$all_classes,
+		create_function( '$c', 'return in_array( "WPSkillz_Question", class_parents( $c ) );' )
+	);
+	remove_submenu_page( 'edit.php?post_type=quiz', 'post-new.php?post_type=quiz' );
+	/*
+	 * It would be really nice to assume PHP 5.3 and just loop through defined 
+	 * classes like this:
+	 *
+	 *	foreach ( $question_types as $question_class ) {
+	 *		$question_type_text = $question_class::$question_type;
+	 *		$question_type_slug = $question_class::$question_slug;
+	 *		add_submenu_page( 
+	 *			'edit.php?post_type=quiz', 
+	 *			sprintf( __( 'Add new %s question', 'wpskillz' ), $question_type_text ),
+	 *			sprintf( __( 'Add new %s question', 'wpskillz' ), $question_type_text ),
+	 *			'edit_posts',
+	 *			'post-new.php?post_type=quiz&question_type='.$question_type_slug,
+	 *			null
+	 *		);
+	 *	}
+	 *
+	 *	But -sigh- no go, so for now I'm going to just hardcode the question 
+	 *	type link.
+	 *
+	 *	TODO: make this extensible (maybe a filter would work and the other 
+	 *	places this problem is encountered)
+	 */
+
+	add_submenu_page( 
+		'edit.php?post_type=quiz', 
+		 __( 'Add new multiple choice question', 'wpskillz' ), 
+		 __( 'Add new multiple choice question', 'wpskillz' ), 
+		'edit_posts',
+		'post-new.php?post_type=quiz&question_type=multichoice',
+		null
+	);
+}
+
+add_action( 'admin_menu', 'wpskillz_question_types' );
+
+/*
+ * Register the "Quiz" post type
+ *
+ */
+function wpskillz_post_type_registration() {
+	register_post_type( 'quiz',
+		array(
+			'labels'		=> array(
+				'name'			=> __( 'Quizzes', 'wp_skillz' ),
+				'singular_name'	=> __( 'Quiz', 'wp_skillz' ),
+				'add_new'		=> __( 'Add New', 'wp_skillz' ),
+				'add_new_item'	=> __( 'Add New question', 'wp_skillz' ),
+				'edit'			=> __( 'Edit', 'wp_skillz' ),
+				'edit_item'		=> __( 'Edit this question', 'wp_skillz' ),
+				'new_item'		=> __( 'New quiz', 'wp_skillz' ),
+				'view'			=> __( 'View', 'wp_skillz' ),
+				'view_item'		=> __( 'View question', 'wp_skillz' ),
+				'search_items'	=> __( 'Search quiz questions', 'wp_skillz' ),
+				'not_found'		=> __( 'No questions Found', 'wp_skillz' ),
+				'not_found_in_trash'		=> __( 'No questions Found in trash', 'wp_skillz' ),
+				'parent'		=> __( '', 'wp_skillz' ),
+			),
+			'public'		=> true,
+			'show_ui'		=> true,
+			'register_meta_box_cb'	=> 'wpskillz_quiz_meta_boxes',
+			'menu_position'	=> 5,
+			'has_archive'	=> true,
+			'publicly_queryable'	=> true,
+			'rewrite'		=> array( 'slug'=>'quiz' ),
+			'supports'		=> array( 
+				'custom_fields',
+				'comments'
+			)
+		)
+	);
+} 
+
+add_action( 'init', 'wpskillz_post_type_registration' );
+
+
+/*
+ *	A basic diff function for storing history on answers 
+ *
+ *	Since revisions don't work off the bat with custom fields, I wanted to store a
+ *	history of all changes that have been made to each of the answers. This would
+ *	be helpful for going back, discounting wrong answers if there were no good answers
+ *	etc. Not really implemented yet, though.
+ *
+ *
+ *	Paul's Simple Diff Algorithm v 0.1
+ *	(C) Paul Butler 2007 <http://www.paulbutler.org/>
+ *	May be used and distributed under the zlib/libpng license.
+ *	Source: http://paulbutler.org/archives/a-simple-diff-algorithm-in-php/
+ *	or https://github.com/paulgb/simplediff
+ */
+function diff($old, $new){
+	foreach($old as $oindex => $ovalue){
+		$nkeys = array_keys($new, $ovalue);
+		foreach($nkeys as $nindex){
+			$matrix[$oindex][$nindex] = isset($matrix[$oindex - 1][$nindex - 1]) ?
+				$matrix[$oindex - 1][$nindex - 1] + 1 : 1;
+			if($matrix[$oindex][$nindex] > $maxlen){
+				$maxlen = $matrix[$oindex][$nindex];
+				$omax = $oindex + 1 - $maxlen;
+				$nmax = $nindex + 1 - $maxlen;
+			}
+		}
+	}
+	if($maxlen == 0) return array(array('d'=>$old, 'i'=>$new));
+	return array_merge(
+		diff(array_slice($old, 0, $omax), array_slice($new, 0, $nmax)),
+		array_slice($new, $nmax, $maxlen),
+		diff(array_slice($old, $omax + $maxlen), array_slice($new, $nmax + $maxlen)));
+}
+
+function htmlDiff($old, $new){
+	$diff = diff(explode(' ', $old), explode(' ', $new));
+	foreach($diff as $k){
+		if(is_array($k))
+			$ret .= (!empty($k['d'])?"<del>".implode(' ',$k['d'])."</del> ":'').
+			(!empty($k['i'])?"<ins>".implode(' ',$k['i'])."</ins> ":'');
+		else $ret .= $k . ' ';
+	}
+	return $ret;
+}
+
 
