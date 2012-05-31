@@ -28,7 +28,8 @@ function wpskillz_post_type_registration() {
 			'publicly_queryable'	=> true,
 			'rewrite'		=> array( 'slug'=>'quiz' ),
 			'supports'		=> array( 
-				'custom_fields'
+				'custom_fields',
+				'comments'
 			)
 		)
 	);

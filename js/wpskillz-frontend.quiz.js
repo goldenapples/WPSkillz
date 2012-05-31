@@ -13,7 +13,10 @@
         success: function(r) {
           var response;
           response = JSON.parse(r);
-          return $('#wpskillz-quiz-answers').html(response['answer_section_text']);
+          $('#wpskillz-quiz-answers').html(response['answer_section_text']);
+          if (response['comments_section'] && $('#comments')) {
+            return $('#comments').html(response['comments_section']);
+          }
         }
       });
       return false;

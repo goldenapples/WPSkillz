@@ -92,7 +92,8 @@ class WPSkillz_Session {
 	 */
 	function __construct( $new_login ) {
 
-		session_start();
+		if ( !session_id() )
+			session_start();
 		global $current_user;
 
 		if ( $new_login ) 
@@ -264,7 +265,7 @@ class WPSkillz_Session {
 
 		if ( get_option( 'users_can_register' ) )
 			$registration_link_text = sprintf( 
-				__( 'or <a href="%s">register for an account</a>', 'wpskillz' ), 
+				__( 'or <a href="%s">register for an account</a> ', 'wpskillz' ), 
 				add_query_arg( 'action', 'register', $login_link ) 
 			);
 
@@ -299,11 +300,14 @@ function wpskillz_ajax_handle_answer() {
 	if ( !defined( 'DOING_AJAX' ) )
 		return false;
 
-	global $wpskillz_session;
-	$wpskillz_session = new WPSkillz_Session;
+	global $wpskillz_session, $post;
+	$wpskillz_session = new WPSkillz_Session(false);
 
 	$q = intval( $_POST['question'] );
-	$post = get_post( $q ); 
+
+	query_posts( array( 'p' => $q, 'post_type' => 'quiz' ) );
+	if ( have_posts() ) : while ( have_posts() ) : the_post();
+		
 	$a = $_POST['guess'];
 
 	if ( !$post || $post->post_type !== 'quiz' || !$a )
@@ -320,6 +324,8 @@ function wpskillz_ajax_handle_answer() {
 	}
 
 	$response = $question_post->render_answer_mark( $q, $a );
+
+	endwhile; endif; // have_posts()
 
 	echo json_encode ( $response );
 

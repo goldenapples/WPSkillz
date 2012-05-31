@@ -50,6 +50,7 @@ class WPSkillz_Question {
 	public function __construct( &$post = null ) {
 
 		add_filter( 'the_title', array( &$this, 'title_progress' ) );
+		add_filter( 'comments_open', array( &$this, 'close_comments' ) );
 
 		/*
 		 * Since the questions are not set up until the_post hook is run, it's too late
@@ -57,10 +58,13 @@ class WPSkillz_Question {
 		 */
 		if ( !is_admin() ) $this->enqueue_scripts();
 
-		if ( $post )
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX )
+			$this->ID = intval( $_POST['question'] );
+		else if ( $post )
 			$this->ID = $post->ID;
 		else 
 			$this->ID = false;
+
 	}
 
 	/*
@@ -82,7 +86,14 @@ class WPSkillz_Question {
 	 */
 	function title_progress( $title ) {
 
-		if ( is_admin() || !is_main_query() || !in_the_loop() )
+		/* 
+		 * This logic is awful. Basically skip this filter in the
+		 * admin section, EXCEPT when being called through admin ajax.
+		 */
+		if ( is_admin() && !defined( 'DOING_AJAX' ) )
+			return $title;
+
+		if ( ( !is_main_query() || !in_the_loop() ) && !defined( 'DOING_AJAX' ) )
 			return $title;
 
 		global $post;
@@ -93,7 +104,7 @@ class WPSkillz_Question {
 
 		$title = 'Question '.$wpskillz_session->current.' of '.$wpskillz_session->oftotal;
 	   	$title .= ' ('.number_format( $wpskillz_session->complete / $wpskillz_session->oftotal * 100, 0 ).'% complete)';
-		return $title;
+		return '<span class="title_progress">'.$title.'</span>';
 	}
 
 
@@ -108,8 +119,27 @@ class WPSkillz_Question {
 		return $content;
 	}
 
-
+	/**
+	 * Hides comments on quiz type posts until user has answered the question. 
+	 * (preventing spoilers and giveaways).
+	 *
+	 * Called on `comments_open` filter
+	 *
+	 * @param	array	$open		Are comments enabled in the first place?
+	 * @return	bool	false if user hasn't already answered question;
+	 * 					same value as $open otherwise
+	 */
+	public function close_comments( $open ) {
+		global $wpskillz_session;
+		if ( !is_array( $wpskillz_session->progress ) )
+			return false;
+		if ( !in_array( $this->ID, array_keys( $wpskillz_session->progress ) ) )
+			return false;
+		return $open;
+	}
 	
+
+
 	/*
 	 * Render the answers with the correct answer marked. Can be called through Ajax, in which case
 	 * it will return the HTML content to be loaded into div#wpskillz-quiz-answers, or it can be called

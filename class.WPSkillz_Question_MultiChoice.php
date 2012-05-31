@@ -63,9 +63,9 @@ class WPSkillz_Question_MultiChoice extends WPSkillz_Question {
 	
 	/*
 	 * Render the answers with the correct answer marked. Can be called through 
-	 * Ajax, in which case it will return the HTML content to be loaded into 
-	 * div#wpskillz-quiz-answers, or it can be called directly, in which case it 
-	 * can be used to echo the content.
+	 * Ajax, in which case it will return an array including the HTML content to 
+	 * be loaded into div#wpskillz-quiz-answers as well as other content for updating
+	 * the page; or it can be called directly, in which case it simply echoes the content.
 	 *
 	 * @uses	$this->check_answer()	Called to check whether the answer given 
 	 * 									is correct, and update usermeta and session 
@@ -125,14 +125,23 @@ class WPSkillz_Question_MultiChoice extends WPSkillz_Question {
 		$response .= $wpskillz_session->next_question_link( false );
 
 		/*
-		 * If echoing, just echo the generated html box now. Otherwise, if being called through Ajax,
-		 * add the generated html as an additional element to the array returned by check_answer()
-		 * and return the entire array.
+		 * If echoing, just echo the generated html box now. Otherwise, if 
+		 * being called through Ajax, add the generated html as an additional 
+		 * element to the array returned by check_answer() and return the 
+		 * entire array.
 		 */
 		if ( $echo ) {
 			echo $response;
 		} else {
 			$correct_answer['answer_section_text'] = $response;
+
+			/*
+			 * Return comments section along with answer mark.
+			 */
+			ob_start();
+			comments_template( '', true );
+			$correct_answer['comments_section'] = ob_get_clean();
+
 			return $correct_answer;
 		}
 
@@ -202,10 +211,10 @@ class WPSkillz_Question_MultiChoice extends WPSkillz_Question {
 						<td><input name="is_correct" value="<?php echo $id; ?>" type="radio" <?php checked( $answer['is_correct'] ); ?> /></td>
 						<td>
 						<div id="wmd-button-bar-<?php echo $id; ?>" style="display:none;"></div>
-							<textarea id="wmd-input-<?php echo $id; ?>" name="answers[<?php echo $id; ?>][answer_md]" class="wmd-panel wmd-input" rows="3" cols="30"><?php echo $answer['answer_md']; ?></textarea></td>
+							<textarea id="wmd-input-<?php echo $id; ?>" name="answers[<?php echo $id; ?>][answer_md]" class="wmd-panel wmd-input" rows="3" cols="30"><?php echo esc_textarea($answer['answer_md']); ?></textarea></td>
 						<td>
 							<div id="wmd-preview-<?php echo $id; ?>" class="wmd-panel wmd-preview"></div>
-							<input type="hidden" name="answers[<?php echo $id; ?>][answer_html]" id="quiz-<?php echo $id; ?>-html" />
+							<input type="hidden" name="answers[<?php echo $id; ?>][answer_html]" id="quiz-<?php echo $id; ?>-html" value="<?php echo esc_attr($answer['answer_text']); ?>" />
 						</td>
 					</tr>
 						<?php 		
@@ -223,8 +232,8 @@ class WPSkillz_Question_MultiChoice extends WPSkillz_Question {
 	static function explanation_box() {
 		global $post;
 
-		$explanation_html = get_post_meta( $post->ID, 'explanation_html', true );
-		$explanation_md = get_post_meta( $post->ID, 'explanation_md', true );
+		$explanation_html = esc_attr( get_post_meta( $post->ID, 'explanation_html', true ) );
+		$explanation_md = esc_textarea( get_post_meta( $post->ID, 'explanation_md', true ) );
 
 		echo <<<EOF
 
