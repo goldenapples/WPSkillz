@@ -100,10 +100,8 @@ class WPSkillz_Question {
 		if ( $post->post_type !== 'quiz' )
 			return $title;
 
-		global $wpskillz_session;
-
-		$title = 'Question '.$wpskillz_session->current.' of '.$wpskillz_session->oftotal;
-	   	$title .= ' ('.number_format( $wpskillz_session->complete / $wpskillz_session->oftotal * 100, 0 ).'% complete)';
+		$title = 'Question '.WPSkillz_Session::$current.' of '.WPSkillz_Session::$oftotal;
+	   	$title .= ' ('.number_format( WPSkillz_Session::$complete / WPSkillz_Session::$oftotal * 100, 0 ).'% complete)';
 		return '<span class="title_progress">'.$title.'</span>';
 	}
 
@@ -130,10 +128,10 @@ class WPSkillz_Question {
 	 * 					same value as $open otherwise
 	 */
 	public function close_comments( $open ) {
-		global $wpskillz_session;
-		if ( !is_array( $wpskillz_session->progress ) )
+
+		if ( !is_array( WPSkillz_Session::$progress ) )
 			return false;
-		if ( !in_array( $this->ID, array_keys( $wpskillz_session->progress ) ) )
+		if ( !in_array( $this->ID, array_keys( WPSkillz_Session::$progress ) ) )
 			return false;
 		return $open;
 	}
@@ -191,12 +189,10 @@ class WPSkillz_Question {
 
 		$response .= '</ol>';
 
-		global $wpskillz_session;
-
 		if ( !is_user_logged_in() )
-			$response .= $wpskillz_session->login_invitation();
+			$response .= WPSkillz_session::login_invitation();
 		
-		$response .= $wpskillz_session->next_question_link( false );
+		$response .= WPSkillz_Session::next_question_link( false );
 
 		/*
 		 * If echoing, just echo the generated html box now. Otherwise, if being called through Ajax,

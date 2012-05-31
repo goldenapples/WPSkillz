@@ -117,12 +117,10 @@ class WPSkillz_Question_MultiChoice extends WPSkillz_Question {
 			. $correct_answer['explanation'] .
 			'</div>';
 
-		global $wpskillz_session;
-
 		if ( !is_user_logged_in() )
-			$response .= $wpskillz_session->login_invitation();
+			$response .= WPSkillz_Session::login_invitation();
 		
-		$response .= $wpskillz_session->next_question_link( false );
+		$response .= WPSkillz_Session::next_question_link( false );
 
 		/*
 		 * If echoing, just echo the generated html box now. Otherwise, if 
@@ -268,25 +266,23 @@ EOF;
 		if ( $post->post_type !== 'quiz' )
 			return $content;
 
-		global $wpskillz_session;
-
 		/*
 		 * If question has already been answered, prepend message to questions 
 		 * indicating that user has already answered the question, and call 
 		 * render_answer_mark to append correct answer and explanation. 
 		 * Otherwise just append answer choices to question.
 		 */
-		if ( is_array( $wpskillz_session->progress ) &&
-			in_array( $this->ID, array_keys( $wpskillz_session->progress ) ) ) {
+		if ( is_array( WPSkillz_Session::$progress ) &&
+			in_array( $this->ID, array_keys( WPSkillz_Session::$progress ) ) ) {
 
-				$date = $wpskillz_session->progress[$this->ID]['date'];
+				$date = WPSkillz_Session::$progress[$this->ID]['date'];
 				$date_format_local = mysql2date( get_option('date_format'), $date, true );
 
 				$content = '<p class="already-done">You\'ve answered this question (on '.$date_format_local.')</p>' . $content;
 
 				$content .= '<div id="wpskillz-quiz-answers">';
 
-				$answer_mark = $this->render_answer_mark( $this->ID, $wpskillz_session->progress[$this->ID]['answer_given'], false, true );
+				$answer_mark = $this->render_answer_mark( $this->ID, WPSkillz_Session::$progress[$this->ID]['answer_given'], false, true );
 				$content .= $answer_mark['answer_section_text'];
 
 				$content .= '</div>';
@@ -481,8 +477,7 @@ EOF;
 			)
 		);
 
-		global $wpskillz_session;
-		$wpskillz_session->update_progress( $current_question_result );
+		WPSkillz_Session::update_progress( $current_question_result );
 
 		return array(
 			'mark'	=> $is_answer_correct,

@@ -20,18 +20,14 @@
 add_action( 'init', 'wpskillz_session_start' );
 
 function wpskillz_session_start( $new_login = false ) {
-	global $wpskillz_session;
-	$wpskillz_session = new WPSkillz_Session( $new_login );
-
+	WPSkillz_Session::init( $new_login );
 }
 
 add_action( 'wp_login', 'wpskillz_merge_session_progress', 10, 2 );
 
 function wpskillz_merge_session_progress( $user_login, $user ) {
-	global $wpskillz_session;
-	if ( !isset( $wpskillz_session ) )
-		wpskillz_session_start( true );
-	$wpskillz_session->login( $user_login, $user );
+	WPSkillz_Session::init( true );
+	WPSkillz_Session::login( $user_login, $user );
 }
 
 /**
@@ -49,21 +45,21 @@ class WPSkillz_Session {
 	 *
 	 * @var int
 	 **/
-	var $complete;
+	static $complete;
 
 	/**
 	 * The number of questions answered correctly in the current session
 	 *
 	 * @var int
 	 **/
-	var $correct;
+	static $correct;
 
 	/**
 	 * Total number of questions available in test
 	 *
 	 * @var int
 	 **/
-	var $oftotal;
+	static $oftotal;
 
 	/**
 	 * Current question number 
@@ -71,7 +67,14 @@ class WPSkillz_Session {
 	 *
 	 * @var int
 	 **/
-	var $current;
+	static $current;
+
+	/**
+	 * Percent complete
+	 *
+	 * @var float
+	 **/
+	static $percent;
 
 	/**
 	 * All data about questions answered in the current session.
@@ -81,7 +84,7 @@ class WPSkillz_Session {
 	 *
 	 * @var array
 	 **/
-	var $progress;
+	static $progress;
 
 	/**
 	 * Initialize all the class variables on session start.
@@ -90,14 +93,14 @@ class WPSkillz_Session {
 	 *
 	 * @return void
 	 */
-	function __construct( $new_login ) {
+	function init( $new_login ) {
 
 		if ( !session_id() )
 			session_start();
 		global $current_user;
 
 		if ( $new_login ) 
-			$progress = $this->login();
+			$progress = self::login();
 		else if ( is_user_logged_in() )
 			$progress = get_user_meta( $current_user->ID, 'wpskillz_test', true );
 		else
@@ -113,14 +116,14 @@ class WPSkillz_Session {
 
 		$current_question = get_queried_object_id();
 
-		$this->complete = $complete;
-		$this->correct = count( $correct_answers );
-		$this->oftotal = $questions;
-		$this->current = ( is_array( $progress ) && in_array( $current_question, array_keys( $progress ) ) ) ? $complete : $complete + 1;
-		$this->percent = ( $questions ) ? $complete / $questions : 0;
-		$this->progress = $progress;
+		self::$complete = $complete;
+		self::$correct = count( $correct_answers );
+		self::$oftotal = $questions;
+		self::$current = ( is_array( $progress ) && in_array( $current_question, array_keys( $progress ) ) ) ? $complete : $complete + 1;
+		self::$percent = ( $questions ) ? $complete / $questions : 0;
+		self::$progress = $progress;
 
-		add_shortcode( 'start-quiz', array( &$this, 'start_quiz_content' ) );
+		add_shortcode( 'start-quiz', array( WPSkillz_Session, 'start_quiz_content' ) );
 	}
 
 	/**
@@ -133,16 +136,16 @@ class WPSkillz_Session {
 		if ( !is_array( $question_results ) )
 			$question_results = array();
 
-		if ( !is_array( $this->progress ) )
-			$this->progress = array();
+		if ( !is_array( self::$progress ) )
+			self::$progress = array();
 
-		$this->progress = $this->progress + $question_results;
+		self::$progress = self::$progress + $question_results;
 
 		// Update progress session variable and user meta
-		$_SESSION['wpskillz_test'] = maybe_serialize( $this->progress );
+		$_SESSION['wpskillz_test'] = maybe_serialize( self::$progress );
 		if ( is_user_logged_in() ) {
 			global $current_user;
-			update_user_meta( $current_user->ID, 'wpskillz_test', $this->progress );
+			update_user_meta( $current_user->ID, 'wpskillz_test', self::$progress );
 		}
 	}
 
@@ -155,7 +158,7 @@ class WPSkillz_Session {
 	 */
 	function next_question() {
 
-		$questions_done = ( $this->progress ) ? array_keys( $this->progress ) : array();
+		$questions_done = ( self::$progress ) ? array_keys( self::$progress ) : array();
 
 		$next_question_array = get_posts(
 			array(
@@ -188,7 +191,7 @@ class WPSkillz_Session {
 	 * 						all questions have already been completed.
 	 */
 	function next_question_link( $echo = true, $text = '' ) {
-		$link = $this->next_question();
+		$link = self::next_question();
 		if ( $link ) {
 			if ( empty( $text ) )
 				$text = __( 'Next question', 'wpskillz' );
@@ -219,7 +222,7 @@ class WPSkillz_Session {
 	 * @return	str		link to a random question
 	 */
 	function start_quiz_content( $atts ) {
-		return $this->next_question_link( false, __( 'Start the test now!', 'wpskillz' ) );
+		return self::next_question_link( false, __( 'Start the test now!', 'wpskillz' ) );
 	}
 
 	/**
@@ -242,10 +245,10 @@ class WPSkillz_Session {
 		if ( !$anonymous_progress )
 			$anonymous_progress = array();
 
-		$this->progress = $user_saved_progress + $anonymous_progress;
-		$this->update_progress( null );
+		self::$progress = $user_saved_progress + $anonymous_progress;
+		self::update_progress( null );
 
-		return $this->progress;
+		return self::$progress;
 	}
 
 	/**
@@ -259,7 +262,7 @@ class WPSkillz_Session {
 		if ( is_user_logged_in() )
 			return;
 
-		$login_link = wp_login_url( $this->next_question() );
+		$login_link = wp_login_url( self::next_question() );
 
 		$login_link_text = sprintf( __('<a href="%s">Login now</a> ', 'wpskillz' ), $login_link );
 
@@ -300,8 +303,8 @@ function wpskillz_ajax_handle_answer() {
 	if ( !defined( 'DOING_AJAX' ) )
 		return false;
 
-	global $wpskillz_session, $post;
-	$wpskillz_session = new WPSkillz_Session(false);
+	global $post;
+	WPSkillz_Session::init( false );
 
 	$q = intval( $_POST['question'] );
 
