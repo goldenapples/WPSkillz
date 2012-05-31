@@ -17,16 +17,16 @@
  *
  */
 
-add_action( 'init', 'wpskillz_session_start' );
+add_action( 'wp', 'wpskillz_session_start' );
 
-function wpskillz_session_start( $new_login = false ) {
-	WPSkillz_Session::init( $new_login );
+function wpskillz_session_start( ) {
+	WPSkillz_Session::init( false );
 }
 
 add_action( 'wp_login', 'wpskillz_merge_session_progress', 10, 2 );
 
 function wpskillz_merge_session_progress( $user_login, $user ) {
-	WPSkillz_Session::init( true );
+	error_log( 'logging in..?' );
 	WPSkillz_Session::login( $user_login, $user );
 }
 
@@ -106,6 +106,8 @@ class WPSkillz_Session {
 		else
 			$progress = ( isset( $_SESSION['wpskillz_test'] ) ) ? maybe_unserialize( $_SESSION['wpskillz_test'] ) : false;
 
+		$progress = array_filter( $progress );
+
 		$complete = ( $progress ) ? count( $progress ) : 0;
 		$questions = wp_count_posts( 'quiz' )->publish;
 
@@ -115,13 +117,14 @@ class WPSkillz_Session {
 		);
 
 		$current_question = get_queried_object_id();
+		$current_question_answered =  in_array( $current_question, array_keys( (array)$progress ), true );
 
+		self::$progress = $progress;
 		self::$complete = $complete;
 		self::$correct = count( $correct_answers );
 		self::$oftotal = $questions;
-		self::$current = ( is_array( $progress ) && in_array( $current_question, array_keys( $progress ) ) ) ? $complete : $complete + 1;
+		self::$current = ( $current_question_answered ) ? $complete : $complete + 1;
 		self::$percent = ( $questions ) ? $complete / $questions : 0;
-		self::$progress = $progress;
 
 		add_shortcode( 'start-quiz', array( 'WPSkillz_Session', 'start_quiz_content' ) );
 	}
