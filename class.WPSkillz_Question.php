@@ -309,9 +309,18 @@ function wpskillz_save_post( $post_ID ) {
 	if ( !isset( $_REQUEST['question_type'] ) )
 		wp_die( 'You must specify a question type to add a new question.' );
 
-	$question_type = $_REQUEST['question_type'];
-	$question_type_class = "WPSkillz_Question_{$question_type}";
+	/*
+	 * Another spot where PHP5.3 would come in real handy:
+	 *
+	 *	$question_type = $_REQUEST['question_type'];
+	 *	$question_type_class = "WPSkillz_Question_{$question_type}";
+	 *	$question_type_class::save_post( $post_ID );
+	 *
+	 */
 
-	$question_type_class::save_post( $post_ID );
+	if ( $_REQUEST['question_type'] == 'multichoice' )
+		WPSkillz_Question_MultiChoice::save_post( $post_ID );
+	else // TODO: make this extensible
+		wp_die( __( 'Not a valid question type', 'wpskillz' ) );
 
 }
