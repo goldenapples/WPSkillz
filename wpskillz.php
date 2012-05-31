@@ -49,11 +49,26 @@ function wpskillz_setup_question_data( $post ) {
 	global $question_post;
 	if ( !isset( $question_post ) ) {
 		$question_type = get_post_meta( $post->ID, '_question_type', true );
-		$question_type_class = "WPSkillz_Question_{$question_type}";
-		if ( $question_type && class_exists( $question_type_class ) )
-			$question_post = new $question_type_class( $post );
-		else 
-			$question_post = new WPSkillz_Question_multichoice( $post );
+
+		/*
+		 * The idea here was to use the ability in PHP 5.3 to reference static 
+		 * classes by variable name and do something like this:
+		 *
+		 *		$question_type_class = "WPSkillz_Question_{$question_type}";
+		 *		if ( $question_type && class_exists( $question_type_class ) )
+		 *			$question_post = new $question_type_class( $post );
+		 *		else 
+		 *			$question_post = new WPSkillz_Question_multichoice( $post );
+		 *
+		 * Since that's not possible in PHP 5.2.x and the majority of WP sites 
+		 * are still running some version of 5.2, we have to resort to this 
+		 * clumsier approach. 
+		 */
+		global $question_post;
+		if ( $question_type == 'multichoice' )
+			$question_post = new WPSkillz_Question_MultiChoice( $post );
+		else
+			wp_die( __( 'Not a valid question type', 'wpskillz' ) );
 	}
 
 }

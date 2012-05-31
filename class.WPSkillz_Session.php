@@ -123,7 +123,7 @@ class WPSkillz_Session {
 		self::$percent = ( $questions ) ? $complete / $questions : 0;
 		self::$progress = $progress;
 
-		add_shortcode( 'start-quiz', array( WPSkillz_Session, 'start_quiz_content' ) );
+		add_shortcode( 'start-quiz', array( 'WPSkillz_Session', 'start_quiz_content' ) );
 	}
 
 	/**

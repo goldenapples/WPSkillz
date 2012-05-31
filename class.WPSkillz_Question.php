@@ -280,7 +280,24 @@ function wpskillz_quiz_meta_boxes() {
 			wp_die( 'Not a valid question type' );
 	}
 
-	$question_type_class::setup_meta_boxes();
+	/*
+	 * With PHP 5.3 support for referencing static classes by variable name, we could just do
+	 *
+	 * 		$question_type_class = "WPSkillz_Question_{$question_type}";
+	 *
+	 *		if ( !class_exists( $question_type_class ) )
+	 *			wp_die( 'Not a valid question type' );
+	 *
+	 * 		$question_type_class::setup_meta_boxes(); 
+	 *
+	 * and cover any and all question types that have been defined with one reference. However, 
+	 * since that support isn't available yet, we have to loop through all possible class types.
+	 */
+
+	if ( $question_type == 'multichoice' )
+		WPSkillz_Question_MultiChoice::setup_meta_boxes();
+	else // TODO: make this extensible
+		wp_die( __( 'Not a valid question type', 'wpskillz' ) );
 }
 
 add_action( 'save_post', 'wpskillz_save_post' );
