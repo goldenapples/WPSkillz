@@ -18,25 +18,25 @@ function wpskillz_debug_bar_panel( $panels ) {
 
 				echo "<div id='debug-bar-wpskillz'>";
 
-				global $current_user, $wpskillz_session;
+				global $current_user;
 
-				echo <<<EOF
+				echo '
 					<h3>Current User:</h3>
 					<ul>
-						<li><strong>ID</strong>: {$current_user->ID}</li>
-						<li><strong>Name</strong>: {$current_user->display_name}</li>
+						<li><strong>ID</strong>: ' . $current_user->ID . '</li>
+						<li><strong>Name</strong>: ' . $current_user->display_name . '</li>
 					</ul>
 
 					<h3>Test Progress:</h3>
 					<ul>
-						<li>Completed {$wpskillz_session->complete} of {$wpskillz_session->oftotal} questions</li>
-						<li>Correct answers: {$wpskillz_session->correct} of {$wpskillz_session->complete}</li>
+						<li>Completed ' . WPSkillz_Session::$complete . ' of ' . WPSkillz_Session::$oftotal . ' questions</li>
+						<li>Correct answers: ' . WPSkillz_Session::$correct . ' of ' . WPSkillz_Session::$complete .'</li>
 					</ul>
-EOF;
+					';
 
 				echo '<h3>$progress</h3>';
 
-				var_dump( $wpskillz_session->progress );
+				var_dump( WPSkillz_Session::$progress );
 
 				echo '<br><br>';
 

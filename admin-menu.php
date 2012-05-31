@@ -5,8 +5,7 @@
 function wpskillz_admin_pages() {
 	add_submenu_page(
 		'edit.php?post_type=quiz',
-		__( 'WP-Skillz Test Settings',
-		'wpskillz_settings' ),
+		__( 'WP-Skillz Test Settings', 'wpskillz' ),
 		'Test Settings',
 		'activate_plugins',
 		'wpskillz_plugin_settings',
@@ -32,22 +31,38 @@ function wpskillz_question_types() {
 		create_function( '$c', 'return in_array( "WPSkillz_Question", class_parents( $c ) );' )
 	);
 	remove_submenu_page( 'edit.php?post_type=quiz', 'post-new.php?post_type=quiz' );
-	foreach ( $question_types as $question_class ) {
-		$question_type_text = $question_class::$question_type;
-		$question_type_slug = $question_class::$question_slug;
-		add_submenu_page( 
-			'edit.php?post_type=quiz', 
-			sprintf( __( 'Add new %s question', 'wpskillz' ), $question_type_text ),
-			sprintf( __( 'Add new %s question', 'wpskillz' ), $question_type_text ),
-			'edit_posts',
-			'post-new.php?post_type=quiz&question_type='.$question_type_slug,
-			null
-		);
-	}
+	/*
+	 * It would be really nice to assume PHP 5.3 and just loop through defined 
+	 * classes like this:
+	 *
+	 *	foreach ( $question_types as $question_class ) {
+	 *		$question_type_text = $question_class::$question_type;
+	 *		$question_type_slug = $question_class::$question_slug;
+	 *		add_submenu_page( 
+	 *			'edit.php?post_type=quiz', 
+	 *			sprintf( __( 'Add new %s question', 'wpskillz' ), $question_type_text ),
+	 *			sprintf( __( 'Add new %s question', 'wpskillz' ), $question_type_text ),
+	 *			'edit_posts',
+	 *			'post-new.php?post_type=quiz&question_type='.$question_type_slug,
+	 *			null
+	 *		);
+	 *	}
+	 *
+	 *	But -sigh- no go, so for now I'm going to just hardcode the question 
+	 *	type link.
+	 *
+	 *	TODO: make this extensible (maybe a filter would work and the other 
+	 *	places this problem is encountered)
+	 */
 
-//	wp_die( print_r( $question_types, true ) );
-
-
+	add_submenu_page( 
+		'edit.php?post_type=quiz', 
+		 __( 'Add new multiple choice question', 'wpskillz' ), 
+		 __( 'Add new multiple choice question', 'wpskillz' ), 
+		'edit_posts',
+		'post-new.php?post_type=quiz&question_type=multichoice',
+		null
+	);
 }
 
 

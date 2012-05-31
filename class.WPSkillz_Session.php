@@ -340,6 +340,6 @@ function wpskillz_ajax_handle_answer() {
 
 add_shortcode( 'leaderboards', 'wpskillz_leaderboards' );
 
-function wpskillz_leaderboards( $args, $content = null ) {
+function wpskillz_leaderboards( $args ) {
 	$args = shortcode_atts( $args, array( 'leaders' => 10 ) );
 }
