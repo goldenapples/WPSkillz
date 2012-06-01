@@ -288,7 +288,7 @@ class WPSkillz_Session {
 		if ( get_option( 'users_can_register' ) )
 			$registration_link_text = sprintf( 
 				__( 'or <a href="%s">register for an account</a> ', 'wpskillz' ), 
-				add_query_arg( 'action', 'register', $login_link ) 
+				add_query_arg( 'action', 'register', wp_login_url() ) 
 			);
 
 		$login_box = '

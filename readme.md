@@ -75,6 +75,6 @@ much.
 Live Demo:
 ==========
 
-<del>Live plugin demo populated with sample questions is online at
+Live plugin demo populated with sample questions is online at
 [wpskillz.com](http://wpskillz.com). Try your hand - registration is open and
-scores will be tallied!</del> Live demo not functional yet, but it will be soon.
+scores will be tallied! 
