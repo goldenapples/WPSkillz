@@ -37,8 +37,10 @@ li.answer-list.chosen { text-decoration: line-through; }
 li.answer-list.chosen.correct { text-decoration: none; }
 
 a.next-question {
-	padding: 3px 24px;
-	border: 1px dashed lightgray;
+	font-size: 110%;
+	padding: 6px 24px;
+	background: lightgreen;
+	border: 1px dashed gray;
 	border-radius: 3px;
 	margin-bottom: 2em;
 }

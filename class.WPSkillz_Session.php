@@ -236,7 +236,12 @@ class WPSkillz_Session {
 	 * @return	str		link to a random question
 	 */
 	function start_quiz_content( $atts ) {
-		return self::next_question_link( false, __( 'Start the test now!', 'wpskillz' ) );
+		if ( self::$progress )
+			$linktext = __( 'Continue taking the test', 'wpskillz' );
+		else
+			$linktext = __( 'Start the test now!', 'wpskillz' );
+
+		return self::next_question_link( false, $linktext );
 	}
 
 	/**
