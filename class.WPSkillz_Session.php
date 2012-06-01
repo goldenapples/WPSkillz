@@ -104,7 +104,7 @@ class WPSkillz_Session {
 		else
 			$progress = ( isset( $_SESSION['wpskillz_test'] ) ) ? maybe_unserialize( $_SESSION['wpskillz_test'] ) : false;
 
-		$progress = array_filter( $progress );
+		$progress = array_filter( (array)$progress );
 
 		$complete = ( $progress ) ? count( $progress ) : 0;
 		$questions = wp_count_posts( 'quiz' )->publish;
