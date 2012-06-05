@@ -120,7 +120,7 @@ function wpskillz_question_types() {
 				sprintf( __( 'Add new %s question', 'wpskillz' ), $question_type_text ),
 				sprintf( __( 'Add new %s question', 'wpskillz' ), $question_type_text ),
 				'edit_posts',
-				'post-new.php?post_type=quiz&question_type='.$question_type_slug,
+				admin_url( 'post-new.php?post_type=quiz&question_type='.$question_type_slug ),
 				null
 			);
 
@@ -133,7 +133,7 @@ function wpskillz_question_types() {
 				'parent' => 'new-content',
 				'id' => 'new-'.$question_type_slug,
 				'title' => sprintf( __( '%s question', 'wpskillz' ), $question_type_text ),
-				'href' => 'post-new.php?post_type=quiz&question_type='.$question_type_slug
+				'href' => admin_url( 'post-new.php?post_type=quiz&question_type='.$question_type_slug )
 			) );
 	
 	}
