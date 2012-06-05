@@ -47,6 +47,7 @@ class WPSkillz_Question_MultiChoice extends WPSkillz_Question {
 	 * @var string
 	 **/
 	static $question_type = 'Multiple Choice';
+	public static function question_type() { return self::$question_type; }
 
 	/**
 	 * Slug of the term representing the question type
@@ -54,6 +55,7 @@ class WPSkillz_Question_MultiChoice extends WPSkillz_Question {
 	 * @var string
 	 **/
 	static $question_slug = 'multichoice';
+	public static function question_slug() { return self::$question_slug; }
 
 	public function __construct( &$post ) {
 		parent::__construct( $post );

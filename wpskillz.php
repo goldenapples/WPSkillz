@@ -56,12 +56,16 @@ function wpskillz_setup_question_data( $post ) {
 		 * Since that's not possible in PHP 5.2.x and the majority of WP sites 
 		 * are still running some version of 5.2, we have to resort to this 
 		 * clumsier approach. 
+		 * TODO: make this more extensible...
 		 */
 		global $question_post;
-		if ( $question_type == 'multichoice' )
-			$question_post = new WPSkillz_Question_MultiChoice( $post );
-		else
-			wp_die( __( 'Not a valid question type', 'wpskillz' ) );
+		$question_type_class = "WPSkillz_Question_{$question_type}";
+		if ( $question_type && class_exists( $question_type_class ) ) {
+			$question_post = new ReflectionClass( $question_type_class );
+			$question_post->__construct( $post );
+		} else 
+			$question_post = new WPSkillz_Question_multichoice( $post );
+
 	}
 
 }
@@ -84,56 +88,49 @@ add_action( 'wp_enqueue_scripts', 'wpskillz_enqueue_frontend_stylesheet' );
 
 
 /**
- * Replaces the "Add new question" link from the admin menu with links specific
- * to each of the defined question types.
+ * Replaces the "Add new question" link from the admin menu and the admin bar menu
+ * with links specific to each of the defined question types.
  *
  * This is necessary because meta boxes may be different from one question type 
- * to another. Its a fairly expensive function (filtering through all the 
- * declared class types to find ones which inherit from WPSkillz_Question), so 
+ * to another. Its potentially a fairly expensive function (filtering through all 
+ * the declared class types to find ones which inherit from WPSkillz_Question), so 
  * it should only be run in the admin section.
  */
 function wpskillz_question_types() {
+
 	$all_classes = get_declared_classes();
 	$question_types = array_filter( 
 		$all_classes,
 		create_function( '$c', 'return in_array( "WPSkillz_Question", class_parents( $c ) );' )
 	);
-	remove_submenu_page( 'edit.php?post_type=quiz', 'post-new.php?post_type=quiz' );
-	/*
-	 * It would be really nice to assume PHP 5.3 and just loop through defined 
-	 * classes like this:
-	 *
-	 *	foreach ( $question_types as $question_class ) {
-	 *		$question_type_text = $question_class::$question_type;
-	 *		$question_type_slug = $question_class::$question_slug;
-	 *		add_submenu_page( 
-	 *			'edit.php?post_type=quiz', 
-	 *			sprintf( __( 'Add new %s question', 'wpskillz' ), $question_type_text ),
-	 *			sprintf( __( 'Add new %s question', 'wpskillz' ), $question_type_text ),
-	 *			'edit_posts',
-	 *			'post-new.php?post_type=quiz&question_type='.$question_type_slug,
-	 *			null
-	 *		);
-	 *	}
-	 *
-	 *	But -sigh- no go, so for now I'm going to just hardcode the question 
-	 *	type link.
-	 *
-	 *	TODO: make this extensible (maybe a filter would work and the other 
-	 *	places this problem is encountered)
-	 */
 
-	add_submenu_page( 
-		'edit.php?post_type=quiz', 
-		 __( 'Add new multiple choice question', 'wpskillz' ), 
-		 __( 'Add new multiple choice question', 'wpskillz' ), 
-		'edit_posts',
-		'post-new.php?post_type=quiz&question_type=multichoice',
-		null
-	);
+	remove_submenu_page( 'edit.php?post_type=quiz', 'post-new.php?post_type=quiz' );
+	global $wp_admin_bar;
+	$wp_admin_bar->remove_menu( 'new-quiz' );
+
+	foreach ( $question_types as $question_class ) {
+		$question_type_text = call_user_func( array( $question_class, 'question_type' ) );
+		$question_type_slug = call_user_func( array( $question_class, 'question_slug' ) );
+		add_submenu_page( 
+			'edit.php?post_type=quiz', 
+			sprintf( __( 'Add new %s question', 'wpskillz' ), $question_type_text ),
+			sprintf( __( 'Add new %s question', 'wpskillz' ), $question_type_text ),
+			'edit_posts',
+			'post-new.php?post_type=quiz&question_type='.$question_type_slug,
+			null
+		);
+		$wp_admin_bar->add_menu( array(
+			'parent' => 'new-content',
+			'id' => 'new-'.$question_type_slug,
+			'title' => sprintf( __( '%s question', 'wpskillz' ), $question_type_text ),
+			'href' => 'post-new.php?post_type=quiz&question_type='.$question_type_slug
+		) );
+	}
+
 }
 
 add_action( 'admin_menu', 'wpskillz_question_types' );
+add_action( 'admin_bar_menu', 'wpskillz_question_types', 100 );
 
 /*
  * Register the "Quiz" post type

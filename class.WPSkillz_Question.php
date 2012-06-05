@@ -35,6 +35,7 @@ class WPSkillz_Question {
 	 * @var string
 	 **/
 	public static $question_type = '';
+	public static function question_type() { return self::$question_type; }
 
 	/**
 	 * Slug of the term representing the question type
@@ -42,6 +43,7 @@ class WPSkillz_Question {
 	 * @var string
 	 **/
 	public static $question_slug = '';
+	public static function question_slug() { return self::$question_slug; }
 
 	/*
 	 * Constructor function: called on 'the_post' hook in setup_postdata(). 
@@ -280,24 +282,13 @@ function wpskillz_quiz_meta_boxes() {
 			wp_die( 'Not a valid question type' );
 	}
 
-	/*
-	 * With PHP 5.3 support for referencing static classes by variable name, we could just do
-	 *
-	 * 		$question_type_class = "WPSkillz_Question_{$question_type}";
-	 *
-	 *		if ( !class_exists( $question_type_class ) )
-	 *			wp_die( 'Not a valid question type' );
-	 *
-	 * 		$question_type_class::setup_meta_boxes(); 
-	 *
-	 * and cover any and all question types that have been defined with one reference. However, 
-	 * since that support isn't available yet, we have to loop through all possible class types.
-	 */
+	$question_type_class = "WPSkillz_Question_{$question_type}";
 
-	if ( $question_type == 'multichoice' )
-		WPSkillz_Question_MultiChoice::setup_meta_boxes();
-	else // TODO: make this extensible
-		wp_die( __( 'Not a valid question type', 'wpskillz' ) );
+	if ( !class_exists( $question_type_class ) )
+		wp_die( 'Not a valid question type' );
+
+	call_user_func( array( $question_type_class, 'setup_meta_boxes' ) ); 
+	 
 }
 
 add_action( 'save_post', 'wpskillz_save_post' );
@@ -309,18 +300,11 @@ function wpskillz_save_post( $post_ID ) {
 	if ( !isset( $_REQUEST['question_type'] ) )
 		wp_die( 'You must specify a question type to add a new question.' );
 
-	/*
-	 * Another spot where PHP5.3 would come in real handy:
-	 *
-	 *	$question_type = $_REQUEST['question_type'];
-	 *	$question_type_class = "WPSkillz_Question_{$question_type}";
-	 *	$question_type_class::save_post( $post_ID );
-	 *
-	 */
-
-	if ( $_REQUEST['question_type'] == 'multichoice' )
-		WPSkillz_Question_MultiChoice::save_post( $post_ID );
-	else // TODO: make this extensible
+	$question_type = $_REQUEST['question_type'];
+	$question_type_class = "WPSkillz_Question_{$question_type}";
+	if ( !class_exists( $question_type_class ) )
 		wp_die( __( 'Not a valid question type', 'wpskillz' ) );
+
+	call_user_func( array( $question_type_class, 'save_post' ), $post_ID );
 
 }
