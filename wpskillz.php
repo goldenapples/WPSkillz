@@ -45,26 +45,21 @@ function wpskillz_setup_question_data( $post ) {
 
 		/*
 		 * The idea here was to use the ability in PHP 5.3 to reference static 
-		 * classes by variable name and do something like this:
+		 * classes by variable name and do something like `$question_post = new 
+		 * $question_post_type( $post );
 		 *
-		 *		$question_type_class = "WPSkillz_Question_{$question_type}";
-		 *		if ( $question_type && class_exists( $question_type_class ) )
-		 *			$question_post = new $question_type_class( $post );
-		 *		else 
-		 *			$question_post = new WPSkillz_Question_multichoice( $post );
+		 * Without that ability, I need to use ReflectionObject syntax, which is 
+		 * less readable, but does essentially the same thing. 
 		 *
-		 * Since that's not possible in PHP 5.2.x and the majority of WP sites 
-		 * are still running some version of 5.2, we have to resort to this 
-		 * clumsier approach. 
-		 * TODO: make this more extensible...
 		 */
 		global $question_post;
 		$question_type_class = "WPSkillz_Question_{$question_type}";
+
 		if ( $question_type && class_exists( $question_type_class ) ) {
-			$question_post = new ReflectionClass( $question_type_class );
-			$question_post->__construct( $post );
+			$question_post_type = new ReflectionClass( $question_type_class );
+			$question_post = $question_post_type->newInstance( $post );
 		} else 
-			$question_post = new WPSkillz_Question_multichoice( $post );
+			wp_die( __( 'Not a valid question type.', 'wpskillz' ) );
 
 	}
 
@@ -104,27 +99,43 @@ function wpskillz_question_types() {
 		create_function( '$c', 'return in_array( "WPSkillz_Question", class_parents( $c ) );' )
 	);
 
-	remove_submenu_page( 'edit.php?post_type=quiz', 'post-new.php?post_type=quiz' );
+	if ( is_admin() )
+		remove_submenu_page( 'edit.php?post_type=quiz', 'post-new.php?post_type=quiz' );
+
 	global $wp_admin_bar;
 	$wp_admin_bar->remove_menu( 'new-quiz' );
 
 	foreach ( $question_types as $question_class ) {
 		$question_type_text = call_user_func( array( $question_class, 'question_type' ) );
 		$question_type_slug = call_user_func( array( $question_class, 'question_slug' ) );
-		add_submenu_page( 
-			'edit.php?post_type=quiz', 
-			sprintf( __( 'Add new %s question', 'wpskillz' ), $question_type_text ),
-			sprintf( __( 'Add new %s question', 'wpskillz' ), $question_type_text ),
-			'edit_posts',
-			'post-new.php?post_type=quiz&question_type='.$question_type_slug,
-			null
-		);
-		$wp_admin_bar->add_menu( array(
-			'parent' => 'new-content',
-			'id' => 'new-'.$question_type_slug,
-			'title' => sprintf( __( '%s question', 'wpskillz' ), $question_type_text ),
-			'href' => 'post-new.php?post_type=quiz&question_type='.$question_type_slug
-		) );
+
+		/* 
+		 * If running this on the `admin_menu` hook, add_submenu page here. (The 
+		 * add_submenu_page function already checks capabilities, so we don't 
+		 * need to test for that here.)
+		 */
+		if ( is_admin() ) 
+			add_submenu_page( 
+				'edit.php?post_type=quiz', 
+				sprintf( __( 'Add new %s question', 'wpskillz' ), $question_type_text ),
+				sprintf( __( 'Add new %s question', 'wpskillz' ), $question_type_text ),
+				'edit_posts',
+				'post-new.php?post_type=quiz&question_type='.$question_type_slug,
+				null
+			);
+
+		/*
+		 * Add the admin menu bar item here. We *do* need to check capabilities, 
+		 * because thats not done automatically here.
+		 */
+		if ( current_user_can( 'edit_posts', 'quiz' ) )
+			$wp_admin_bar->add_menu( array(
+				'parent' => 'new-content',
+				'id' => 'new-'.$question_type_slug,
+				'title' => sprintf( __( '%s question', 'wpskillz' ), $question_type_text ),
+				'href' => 'post-new.php?post_type=quiz&question_type='.$question_type_slug
+			) );
+	
 	}
 
 }
